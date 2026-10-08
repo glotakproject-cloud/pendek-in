@@ -1,4 +1,3 @@
-import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,19 +6,15 @@ import { ArrowRight, CheckCircle2, ShieldCheck, Sparkles, Zap } from "lucide-rea
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-black p-6 md:p-12">
+    <main className="p-6 md:p-12">
       <div className="max-w-5xl mx-auto space-y-10">
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b-2 border-black pb-6">
-          <BrandLogo size="lg" />
+        <section className="space-y-4 pt-4">
           <div className="flex items-center gap-3">
-            <Badge variant="default">Fondasi v1.0</Badge>
+            <Badge variant="default">Fondasi Layout v1.0</Badge>
             <Badge variant="secondary">Neobrutalisme</Badge>
           </div>
-        </header>
-
-        <section className="space-y-4">
           <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tight leading-none">
-            Design System <span className="bg-primary px-3 py-1 border-2 border-black shadow-brutal inline-block">Pendek-In</span>
+            Design System &amp; Layout <span className="bg-primary px-3 py-1 border-2 border-black shadow-brutal inline-block">Pendek-In</span>
           </h1>
           <p className="text-lg md:text-xl font-medium text-neutral-700 max-w-2xl">
             Sistem desain Neobrutalisme modern dengan palet warna hijau-krem-hitam, border hitam tegas, tipografi kuat, dan hard shadow tanpa blur.
@@ -50,8 +45,8 @@ export default function Home() {
               <div className="w-10 h-10 bg-accent border-2 border-black flex items-center justify-center shadow-brutal-sm mb-2">
                 <Sparkles size={22} strokeWidth={2.5} />
               </div>
-              <CardTitle>Kustom Tautan & QR</CardTitle>
-              <CardDescription>Back-half kustom & QR dinamis</CardDescription>
+              <CardTitle>Kustom Tautan &amp; QR</CardTitle>
+              <CardDescription>Back-half kustom &amp; QR dinamis</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-6">
               <p className="text-sm font-medium">
@@ -69,7 +64,7 @@ export default function Home() {
                 <ShieldCheck size={22} strokeWidth={2.5} />
               </div>
               <CardTitle>Keamanan Ketat</CardTitle>
-              <CardDescription>Supabase RLS & Hash SHA-256</CardDescription>
+              <CardDescription>Supabase RLS &amp; Hash SHA-256</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-6">
               <p className="text-sm font-medium">
@@ -84,7 +79,7 @@ export default function Home() {
 
         <Card variant="cream">
           <CardHeader>
-            <CardTitle>Komponen Input & Tombol</CardTitle>
+            <CardTitle>Komponen Input &amp; Tombol</CardTitle>
             <CardDescription>Preview styling elemen formulir neobrutalisme</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
