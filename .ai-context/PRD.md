@@ -582,7 +582,7 @@ UPSTASH_REDIS_REST_TOKEN=xxxxxxxxxxxxxxxx
 ---
 
 ## 12. Master Starter Prompt (Siap Coding untuk AI Agent)
-*Salin prompt di bawah ini ke AI Coding Assistant (Google Antigravity / Cursor / Claude Code / GitHub Copilot / Roo Code / dll.) untuk memulai pengerjaan:*
+*Salin prompt di bawah ini ke AI Coding Assistant (Google Antigravity / Cursor / Claude Code / Roo Code / dll.) untuk memulai pengerjaan:*
 
 ```markdown
 Halo! Kamu berperan sebagai Senior Fullstack Architect dan Lead Developer.
@@ -603,12 +603,15 @@ ATURAN EKSEKUSI (WAJIB DIPATUHI):
    - Design System: Neobrutalism — border hitam tebal (2-3px), shadow keras tanpa blur (`shadow-[4px_4px_0px_0px_#0A0A0A]`), font tebal besar (Space Grotesk/Archivo Black untuk heading), palet Primary Green `#00D26A` + Accent Lime `#B4FF39` + Hitam `#0A0A0A` + Putih/Cream `#F5F5F0`.
    - Skema database & RLS policy seperti tertulis di Bab 10 PRD.
    - Validasi Zod di semua Server Action & Route Handler.
-6. Setelah Fase 1 benar-benar selesai dan saya konfirmasi, baru lanjut ke Fase 2. Demikian seterusnya.
+6. MANAJEMEN VERSI (GITHUB): Setiap kali kamu SELESAI mengerjakan 1 Task (contoh: Task 1.1 selesai) dan kode berjalan tanpa error, kamu WAJIB secara otomatis melakukan commit dan push ke GitHub menggunakan perintah terminal ini:
+   `git add .`
+   `git commit -m "feat: menyelesaikan [Nama Task]"`
+   `git push`
+   (Lakukan hal ini sebelum melapor kepadaku atau sebelum lanjut ke Task selanjutnya).
+7. Setelah Fase 1 benar-benar selesai dan saya konfirmasi, baru lanjut ke Fase 2. Demikian seterusnya.
 
 Jika kamu sudah membaca dan memahami PRD ini secara menyeluruh, silakan berikan:
 1. Ringkasan singkat pemahamanmu terhadap Pendek-In (produk, fitur utama, tech stack, dan design system).
 2. Konfirmasi struktur 3 Fase di Bab 11 yang akan kita eksekusi.
 3. Tanyakan kesiapan saya untuk mulai mengeksekusi **Fase 1 dimulai dari Task 1.1 (Foundations & Design System Neobrutalism)**.
-```
-
----
+'''

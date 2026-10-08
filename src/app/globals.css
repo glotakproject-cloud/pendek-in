@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #FFFFFF;
+    --foreground: #0A0A0A;
+  }
+
+  * {
+    border-color: #0A0A0A;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space-grotesk), sans-serif;
+  }
+}
+
+@layer utilities {
+  .neo-btn {
+    @apply font-bold border-2 border-black bg-primary text-black transition-all duration-100 ease-in-out shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none;
+  }
+  
+  .neo-btn-secondary {
+    @apply font-bold border-2 border-black bg-accent text-black transition-all duration-100 ease-in-out shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none;
+  }
+
+  .neo-btn-outline {
+    @apply font-bold border-2 border-black bg-white text-black transition-all duration-100 ease-in-out shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none;
+  }
+
+  .neo-btn-danger {
+    @apply font-bold border-2 border-black bg-destructive text-white transition-all duration-100 ease-in-out shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none;
+  }
+
+  .neo-card {
+    @apply bg-white border-2 border-black shadow-brutal p-6;
+  }
+
+  .neo-card-cream {
+    @apply bg-cream border-2 border-black shadow-brutal p-6;
+  }
+
+  .neo-input {
+    @apply bg-white border-2 border-black px-4 py-3 font-medium text-black placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .neo-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-black border-2 border-black uppercase tracking-wider;
+  }
+}
