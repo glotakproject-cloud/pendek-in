@@ -1,108 +1,46 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ArrowRight, CheckCircle2, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import type { Metadata } from "next";
+import { HeroShortener } from "@/components/home/hero-shortener";
+import { FeaturesSection } from "@/components/home/features-section";
+import { DeveloperApiSection } from "@/components/home/developer-api-section";
+import { TestimonialsSection } from "@/components/home/testimonials-section";
+import { FaqSection } from "@/components/home/faq-section";
+import { CtaSection } from "@/components/home/cta-section";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Pendek-In | Pemendek Tautan Modern Bergaya Neobrutalisme",
+  description:
+    "Layanan pemendek tautan modern Indonesia. Ubah URL panjang jadi ringkas, buat kode QR dinamis siap unduh, kustomisasi slug branding, dan pantau analitik performa klik secara real-time.",
+  openGraph: {
+    title: "Pendek-In | Pemendek Tautan Modern Neobrutalisme",
+    description:
+      "Ubah URL panjang jadi ringkas, buat kode QR dinamis, kustomisasi slug branding, dan pantau analitik performa klik secara gratis.",
+    url: "https://pendek.in",
+    siteName: "Pendek-In",
+    locale: "id_ID",
+    type: "website",
+  },
+};
+
+export default function HomePage() {
   return (
-    <main className="p-6 md:p-12">
-      <div className="max-w-5xl mx-auto space-y-10">
-        <section className="space-y-4 pt-4">
-          <div className="flex items-center gap-3">
-            <Badge variant="default">Fondasi Layout v1.0</Badge>
-            <Badge variant="secondary">Neobrutalisme</Badge>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tight leading-none">
-            Design System &amp; Layout <span className="bg-primary px-3 py-1 border-2 border-black shadow-brutal inline-block">Pendek-In</span>
-          </h1>
-          <p className="text-lg md:text-xl font-medium text-neutral-700 max-w-2xl">
-            Sistem desain Neobrutalisme modern dengan palet warna hijau-krem-hitam, border hitam tegas, tipografi kuat, dan hard shadow tanpa blur.
-          </p>
-        </section>
+    <main className="w-full">
+      {/* 1. Hero dengan input pemendekan besar, hasil instan, & riwayat cepat */}
+      <HeroShortener />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="hover:-translate-y-1 transition-transform">
-            <CardHeader className="bg-primary/20">
-              <div className="w-10 h-10 bg-primary border-2 border-black flex items-center justify-center shadow-brutal-sm mb-2">
-                <Zap size={22} strokeWidth={2.5} />
-              </div>
-              <CardTitle>Kecepatan Tinggi</CardTitle>
-              <CardDescription>Redirect non-blocking &lt; 100ms</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-6">
-              <p className="text-sm font-medium">
-                Pencatatan klik fire-and-forget dengan pelacakan analitik akurat.
-              </p>
-              <Button size="sm" variant="default" className="w-full">
-                Uji Coba <ArrowRight className="ml-1 h-4 w-4" strokeWidth={2.5} />
-              </Button>
-            </CardContent>
-          </Card>
+      {/* 2. Section Fitur 4 Kartu (Pemendekan, Kustom, QR Dinamis, Analitik) */}
+      <FeaturesSection />
 
-          <Card variant="cream" className="hover:-translate-y-1 transition-transform">
-            <CardHeader className="bg-accent/30">
-              <div className="w-10 h-10 bg-accent border-2 border-black flex items-center justify-center shadow-brutal-sm mb-2">
-                <Sparkles size={22} strokeWidth={2.5} />
-              </div>
-              <CardTitle>Kustom Tautan &amp; QR</CardTitle>
-              <CardDescription>Back-half kustom &amp; QR dinamis</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-6">
-              <p className="text-sm font-medium">
-                Sesuaikan slug tautan dan unduh QR code beresolusi tinggi (PNG/SVG).
-              </p>
-              <Button size="sm" variant="secondary" className="w-full">
-                Lihat Fitur <ArrowRight className="ml-1 h-4 w-4" strokeWidth={2.5} />
-              </Button>
-            </CardContent>
-          </Card>
+      {/* 3. Section API untuk Developer dengan code snippet interaktif */}
+      <DeveloperApiSection />
 
-          <Card className="hover:-translate-y-1 transition-transform">
-            <CardHeader className="bg-cream">
-              <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-brutal-sm mb-2">
-                <ShieldCheck size={22} strokeWidth={2.5} />
-              </div>
-              <CardTitle>Keamanan Ketat</CardTitle>
-              <CardDescription>Supabase RLS &amp; Hash SHA-256</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-6">
-              <p className="text-sm font-medium">
-                Data klik terlindungi, isolasi hak akses per pengguna di tingkat database.
-              </p>
-              <Button size="sm" variant="outline" className="w-full">
-                Dokumentasi <ArrowRight className="ml-1 h-4 w-4" strokeWidth={2.5} />
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      {/* 4. Section Testimoni Pengguna */}
+      <TestimonialsSection />
 
-        <Card variant="cream">
-          <CardHeader>
-            <CardTitle>Komponen Input &amp; Tombol</CardTitle>
-            <CardDescription>Preview styling elemen formulir neobrutalisme</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="https://tokobunga.id/katalog/buket-pernikahan-premium"
-                defaultValue="https://tokobunga.id/katalog/buket-pernikahan-premium"
-                className="flex-1 font-mono text-sm"
-              />
-              <Button variant="default">
-                Pendekkan Sekarang!
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Badge variant="default"><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Primary Green #00D26A</Badge>
-              <Badge variant="secondary">Accent Lime #B4FF39</Badge>
-              <Badge variant="destructive">Danger #FF5C5C</Badge>
-              <Badge variant="warning">Warning #FFD23F</Badge>
-              <Badge variant="info">Info #3B82F6</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 5. Section FAQ Accordion */}
+      <FaqSection />
+
+      {/* 6. Section CTA Daftar */}
+      <CtaSection />
     </main>
   );
 }
