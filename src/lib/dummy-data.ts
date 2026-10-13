@@ -296,3 +296,382 @@ export const DUMMY_USER_PROFILE = {
   role: "Member",
   joinedAt: "Juli 2026",
 };
+
+// ==========================================
+// DATA DUMMY ADMIN AREA (TASK 1.6)
+// ==========================================
+
+export interface DummyAdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "member" | "super_admin";
+  status: "active" | "suspended";
+  linksCount: number;
+  totalClicks: number;
+  joinedAt: string;
+  lastLoginAt: string;
+  avatarUrl?: string;
+  bio?: string;
+  phone?: string;
+}
+
+export const DUMMY_ADMIN_USERS: DummyAdminUser[] = [
+  {
+    id: "usr-01",
+    name: "Dimas Pratama",
+    email: "dimas.pratama@gmail.com",
+    role: "member",
+    status: "active",
+    linksCount: 8,
+    totalClicks: 3849,
+    joinedAt: "01 Jul 2026",
+    lastLoginAt: "10 menit yang lalu",
+    phone: "+62 812-3456-7890",
+    bio: "Lead UI/UX Designer & Digital Entrepreneur berbasis di Jakarta.",
+  },
+  {
+    id: "usr-02",
+    name: "Sari Wulandari",
+    email: "sari@tokobunga.id",
+    role: "member",
+    status: "active",
+    linksCount: 14,
+    totalClicks: 8420,
+    joinedAt: "15 Agu 2026",
+    lastLoginAt: "2 jam yang lalu",
+    phone: "+62 813-9876-5432",
+    bio: "Owner Toko Bunga Cantik Jakarta & Florist Specialist.",
+  },
+  {
+    id: "usr-03",
+    name: "Budi Santoso",
+    email: "budi@spamsite.xyz",
+    role: "member",
+    status: "suspended",
+    linksCount: 3,
+    totalClicks: 120,
+    joinedAt: "28 Sep 2026",
+    lastLoginAt: "3 hari yang lalu",
+    phone: "+62 819-0011-2233",
+    bio: "Akun ditangguhkan karena pelanggaran pembuatan link undian palsu.",
+  },
+  {
+    id: "usr-04",
+    name: "Admin Pendek-In",
+    email: "admin@pendek.in",
+    role: "super_admin",
+    status: "active",
+    linksCount: 2,
+    totalClicks: 450,
+    joinedAt: "01 Jan 2026",
+    lastLoginAt: "Sedang Aktif",
+    phone: "+62 811-1234-5678",
+    bio: "Super Administrator & Pemilik Sistem Pendek-In.",
+  },
+  {
+    id: "usr-05",
+    name: "Rian Hidayat",
+    email: "rian.h@startup.id",
+    role: "member",
+    status: "active",
+    linksCount: 5,
+    totalClicks: 1250,
+    joinedAt: "10 Sep 2026",
+    lastLoginAt: "Kemarin",
+    phone: "+62 856-7890-1234",
+    bio: "Growth Marketer di Startup Edutech Jakarta.",
+  },
+  {
+    id: "usr-06",
+    name: "Dewi Lestari",
+    email: "dewi.lestari@gmail.com",
+    role: "member",
+    status: "active",
+    linksCount: 9,
+    totalClicks: 4120,
+    joinedAt: "20 Agu 2026",
+    lastLoginAt: "4 jam yang lalu",
+    phone: "+62 878-1122-3344",
+    bio: "Content Creator & Reviewer Gadget.",
+  },
+];
+
+export interface DummyAdminLink {
+  id: string;
+  slug: string;
+  title: string;
+  originalUrl: string;
+  shortUrl: string;
+  userName: string;
+  userEmail: string;
+  userId: string;
+  clicks: number;
+  uniqueClicks: number;
+  status: "active" | "expired" | "blocked";
+  blockReason?: string;
+  createdAt: string;
+  tags: string[];
+}
+
+export const DUMMY_ADMIN_LINKS: DummyAdminLink[] = [
+  {
+    id: "link-01",
+    slug: "buket-nikah-jkt",
+    title: "Katalog Buket Pernikahan Premium Jakarta Selatan",
+    originalUrl: "https://tokobunga.id/katalog/buket-pernikahan-premium-jakarta-selatan",
+    shortUrl: "https://pendek.in/s/buket-nikah-jkt",
+    userName: "Dimas Pratama",
+    userEmail: "dimas.pratama@gmail.com",
+    userId: "usr-01",
+    clicks: 1247,
+    uniqueClicks: 983,
+    status: "active",
+    createdAt: "01 Okt 2026",
+    tags: ["Bisnis", "Promo"],
+  },
+  {
+    id: "link-02",
+    slug: "tutorial-copywriting",
+    title: "Tutorial Copywriting Menjual untuk Pelaku UMKM",
+    originalUrl: "https://youtube.com/watch?v=contoh-video-tutorial-copywriting",
+    shortUrl: "https://pendek.in/s/tutorial-copywriting",
+    userName: "Dimas Pratama",
+    userEmail: "dimas.pratama@gmail.com",
+    userId: "usr-01",
+    clicks: 452,
+    uniqueClicks: 388,
+    status: "active",
+    createdAt: "03 Okt 2026",
+    tags: ["Edukasi", "YouTube"],
+  },
+  {
+    id: "link-03",
+    slug: "menang-jutaan-rupiah",
+    title: "Klaim Undian Berhadiah Telkomsel & Bank 2026",
+    originalUrl: "https://klik-menang-undian.xyz/login/klaim-dana-kaget-tunai",
+    shortUrl: "https://pendek.in/s/menang-jutaan-rupiah",
+    userName: "Budi Santoso",
+    userEmail: "budi@spamsite.xyz",
+    userId: "usr-03",
+    clicks: 120,
+    uniqueClicks: 85,
+    status: "blocked",
+    blockReason: "Website penipuan phising perbankan dan SMS scam.",
+    createdAt: "29 Sep 2026",
+    tags: ["Scam", "Phishing"],
+  },
+  {
+    id: "link-04",
+    slug: "flash-sale-1010",
+    title: "Promo Kilat 10.10 Diskon Spektakuler Hingga 70%",
+    originalUrl: "https://toko-online-indonesia.com/promo/flash-sale-oktober-spesial",
+    shortUrl: "https://pendek.in/s/flash-sale-1010",
+    userName: "Sari Wulandari",
+    userEmail: "sari@tokobunga.id",
+    userId: "usr-02",
+    clicks: 2150,
+    uniqueClicks: 1890,
+    status: "active",
+    createdAt: "09 Okt 2026",
+    tags: ["E-Commerce", "Promo"],
+  },
+  {
+    id: "link-05",
+    slug: "promo-agustus-merdeka",
+    title: "Katalog Promo HUT RI Diskon 17% Toko Bunga",
+    originalUrl: "https://tokobunga.id/promo/hut-ri-79-agustus-spesial",
+    shortUrl: "https://pendek.in/s/promo-agustus-merdeka",
+    userName: "Sari Wulandari",
+    userEmail: "sari@tokobunga.id",
+    userId: "usr-02",
+    clicks: 742,
+    uniqueClicks: 610,
+    status: "expired",
+    createdAt: "10 Agu 2026",
+    tags: ["Expired", "Promo"],
+  },
+  {
+    id: "link-06",
+    slug: "unduh-software-crack",
+    title: "Free Download Software Pro Full Patch",
+    originalUrl: "https://necopromo-scam.top/files/installer.exe",
+    shortUrl: "https://pendek.in/s/unduh-software-crack",
+    userName: "Budi Santoso",
+    userEmail: "budi@spamsite.xyz",
+    userId: "usr-03",
+    clicks: 45,
+    uniqueClicks: 32,
+    status: "blocked",
+    blockReason: "Penyebaran file executable malware/trojan.",
+    createdAt: "30 Sep 2026",
+    tags: ["Malware", "Bahaya"],
+  },
+];
+
+export interface DummyBlockedDomain {
+  id: string;
+  domain: string;
+  reason: string;
+  addedBy: string;
+  createdAt: string;
+  blockedAttempts: number;
+}
+
+export const DUMMY_BLOCKED_DOMAINS: DummyBlockedDomain[] = [
+  {
+    id: "dom-01",
+    domain: "klik-menang-undian.xyz",
+    reason: "Situs phising undian palsu bermodus SMS blast",
+    addedBy: "Admin Pendek-In",
+    createdAt: "10 Okt 2026",
+    blockedAttempts: 412,
+  },
+  {
+    id: "dom-02",
+    domain: "bit.ly-phishing.example",
+    reason: "Impersonasi link perbankan internet banking palsu",
+    addedBy: "Admin Pendek-In",
+    createdAt: "08 Okt 2026",
+    blockedAttempts: 189,
+  },
+  {
+    id: "dom-03",
+    domain: "necopromo-scam.top",
+    reason: "Distribusi malware dan dropper trojan otomatis",
+    addedBy: "Admin Pendek-In",
+    createdAt: "05 Okt 2026",
+    blockedAttempts: 95,
+  },
+  {
+    id: "dom-04",
+    domain: "hadiah-telkomsel-palsu.online",
+    reason: "Pencurian OTP dan credential phishing provider",
+    addedBy: "Admin Pendek-In",
+    createdAt: "02 Okt 2026",
+    blockedAttempts: 320,
+  },
+];
+
+export interface DummyReservedWord {
+  id: string;
+  word: string;
+  category: "system" | "brand" | "security";
+  addedBy: string;
+  createdAt: string;
+}
+
+export const DUMMY_RESERVED_WORDS: DummyReservedWord[] = [
+  { id: "rw-01", word: "admin", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-02", word: "api", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-03", word: "dashboard", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-04", word: "login", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-05", word: "masuk", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-06", word: "daftar", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-07", word: "s", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-08", word: "p", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-09", word: "qr", category: "system", addedBy: "Sistem Otomatis", createdAt: "01 Jan 2026" },
+  { id: "rw-10", word: "bca", category: "brand", addedBy: "Admin Pendek-In", createdAt: "15 Feb 2026" },
+  { id: "rw-11", word: "mandiri", category: "brand", addedBy: "Admin Pendek-In", createdAt: "15 Feb 2026" },
+  { id: "rw-12", word: "bri", category: "brand", addedBy: "Admin Pendek-In", createdAt: "15 Feb 2026" },
+  { id: "rw-13", word: "support", category: "security", addedBy: "Admin Pendek-In", createdAt: "20 Mar 2026" },
+  { id: "rw-14", word: "official", category: "security", addedBy: "Admin Pendek-In", createdAt: "20 Mar 2026" },
+];
+
+export interface DummyAuditLog {
+  id: string;
+  actor: string;
+  actorRole: string;
+  action: string;
+  targetType: "domain" | "link" | "user" | "word" | "system";
+  target: string;
+  metadata: string;
+  timestamp: string;
+  ipAddress: string;
+}
+
+export const DUMMY_AUDIT_LOGS: DummyAuditLog[] = [
+  {
+    id: "log-01",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "BLOCK_DOMAIN",
+    targetType: "domain",
+    target: "klik-menang-undian.xyz",
+    metadata: "Alasan: Terdeteksi website penipuan undian palsu (SMS spam blast).",
+    timestamp: "12 menit yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+  {
+    id: "log-02",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "ADD_RESERVED_WORD",
+    targetType: "word",
+    target: "bank-bca-official",
+    metadata: "Alasan: Pencegahan impersonasi institusi perbankan resmi.",
+    timestamp: "1 jam yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+  {
+    id: "log-03",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "SUSPEND_USER",
+    targetType: "user",
+    target: "budi@spamsite.xyz",
+    metadata: "Alasan: Pengguna terbukti membuat link scam dan bot blast.",
+    timestamp: "1 hari yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+  {
+    id: "log-04",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "BLOCK_LINK",
+    targetType: "link",
+    target: "s/menang-jutaan-rupiah",
+    metadata: "Alasan: Konten judi online / phishing finansial.",
+    timestamp: "2 hari yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+  {
+    id: "log-05",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "UPDATE_SYSTEM_SETTINGS",
+    targetType: "system",
+    target: "Batas Rate-Limit API",
+    metadata: "Perubahan nilai batas permintaan dari 60 req/menit menjadi 120 req/menit.",
+    timestamp: "4 hari yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+  {
+    id: "log-06",
+    actor: "Admin Pendek-In",
+    actorRole: "super_admin",
+    action: "RESET_PASSWORD_USER",
+    targetType: "user",
+    target: "sari@tokobunga.id",
+    metadata: "Permintaan bantuan reset password dari saluran support@pendek.in.",
+    timestamp: "1 minggu yang lalu",
+    ipAddress: "180.252.14.88",
+  },
+];
+
+export const DUMMY_SYSTEM_SETTINGS = {
+  siteName: "Pendek-In",
+  siteDescription: "Layanan Pemendek Tautan Neobrutalisme Indonesia",
+  appUrl: "https://pendek.in",
+  maintenanceMode: false,
+  maintenanceMessage: "Pendek-In sedang dalam pemeliharaan sistem berkala. Layanan akan kembali normal dalam beberapa saat.",
+  guestRateLimit: 10, // tautan / jam
+  memberRateLimit: 200, // tautan / jam
+  apiRateLimit: 120, // req / menit
+  resendApiKeyConfigured: true,
+  senderEmail: "noreply@pendek.in",
+  senderName: "Pendek-In Notifikasi",
+  enableWeeklyDigest: true,
+  enableSecurityAlerts: true,
+};
+

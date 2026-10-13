@@ -302,3 +302,94 @@ export function DeviceBreakdownChart({ data }: { data: { name: string; value: nu
     </div>
   );
 }
+
+export function Admin30DayChart({ data }: { data: { date: string; clicks: number; unique: number }[] }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="h-[280px] w-full flex items-center justify-center bg-cream/30 border-2 border-black">
+        <span className="font-mono text-xs font-bold text-neutral-500">Memuat grafik 30 hari...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <defs>
+            <linearGradient id="adminClicksGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#00D26A" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#00D26A" stopOpacity={0.0} />
+            </linearGradient>
+            <linearGradient id="adminUniqueGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#B4FF39" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#B4FF39" stopOpacity={0.0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "#0A0A0A", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-space-mono)" }}
+            axisLine={{ stroke: "#0A0A0A", strokeWidth: 2 }}
+            tickLine={{ stroke: "#0A0A0A" }}
+          />
+          <YAxis
+            tick={{ fill: "#0A0A0A", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-space-mono)" }}
+            axisLine={{ stroke: "#0A0A0A", strokeWidth: 2 }}
+            tickLine={{ stroke: "#0A0A0A" }}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="border-2 border-black bg-white p-2.5 shadow-brutal font-mono text-xs space-y-1">
+                    <p className="font-black text-black border-b-2 border-black pb-1 uppercase">{label}</p>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-neutral-700">Total Klik:</span>
+                      <span className="font-black text-black bg-primary px-1 border border-black">
+                        {payload[0]?.value}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-neutral-700">Pengunjung Unik:</span>
+                      <span className="font-black text-black bg-accent px-1 border border-black">
+                        {payload[1]?.value}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="clicks"
+            name="Total Klik"
+            stroke="#0A0A0A"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#adminClicksGradient)"
+          />
+          <Area
+            type="monotone"
+            dataKey="unique"
+            name="Pengunjung Unik"
+            stroke="#00A653"
+            strokeWidth={2}
+            strokeDasharray="4 4"
+            fillOpacity={1}
+            fill="url(#adminUniqueGradient)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
