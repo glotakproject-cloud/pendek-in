@@ -9,6 +9,8 @@ import { GoogleIcon } from "@/components/icons";
 import { ArrowRight, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
+import { signInAction, signInWithGoogleAction } from "@/actions/auth";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = React.useState("dimas.pratama@gmail.com");
@@ -17,7 +19,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("Harap isi email dan kata sandi Anda");
@@ -25,20 +27,42 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const res = await signInAction({ email, password });
+      if (!res.success) {
+        toast.error(res.error || "Gagal masuk. Periksa kembali email dan kata sandi Anda.");
+        setIsLoading(false);
+        return;
+      }
+
       toast.success("Berhasil masuk! Mengarahkan ke Dasbor...");
-      router.push("/dashboard");
-    }, 700);
+      router.push(res.redirect || "/dashboard");
+    } catch {
+      toast.error("Terjadi kesalahan sistem saat mencoba masuk.");
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await signInWithGoogleAction();
+      if (!res.success) {
+        toast.error(res.error || "Gagal menghubungkan ke layanan Google OAuth.");
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        toast.success("Autentikasi Google berhasil! Mengarahkan...");
+        router.push(res.redirect || "/dashboard");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat memulai sesi Google.");
       setIsGoogleLoading(false);
-      toast.success("Autentikasi Google berhasil! Mengarahkan...");
-      router.push("/dashboard");
-    }, 800);
+    }
   };
 
   return (

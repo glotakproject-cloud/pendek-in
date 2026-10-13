@@ -9,6 +9,8 @@ import { GoogleIcon } from "@/components/icons";
 import { ArrowRight, Lock, Mail, User, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
 
+import { signUpAction, signInWithGoogleAction } from "@/actions/auth";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = React.useState("Dimas Pratama");
@@ -18,8 +20,9 @@ export default function RegisterPage() {
   const [agreeTerms, setAgreeTerms] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
+  const [isConfirmationSent, setIsConfirmationSent] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
       toast.error("Harap lengkapi semua kolom formulir");
@@ -37,21 +40,89 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const res = await signUpAction({
+        full_name: name,
+        email,
+        password,
+      });
+
+      if (!res.success) {
+        toast.error(res.error || "Gagal mendaftarkan akun. Silakan coba lagi.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (res.requiresEmailConfirmation) {
+        setIsConfirmationSent(true);
+        toast.success("Tautan verifikasi email telah dikirim!");
+        setIsLoading(false);
+        return;
+      }
+
       toast.success("Pendaftaran berhasil! Selamat datang di Pendek-In.");
-      router.push("/dashboard");
-    }, 700);
+      router.push(res.redirect || "/dashboard");
+    } catch {
+      toast.error("Terjadi kesalahan sistem saat mendaftarkan akun.");
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleSignup = () => {
+  const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await signInWithGoogleAction();
+      if (!res.success) {
+        toast.error(res.error || "Gagal menghubungkan ke layanan Google OAuth.");
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        toast.success("Akun Google berhasil terhubung!");
+        router.push(res.redirect || "/dashboard");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat memulai autentikasi Google.");
       setIsGoogleLoading(false);
-      toast.success("Akun Google berhasil terhubung!");
-      router.push("/dashboard");
-    }, 800);
+    }
   };
+
+  if (isConfirmationSent) {
+    return (
+      <div className="space-y-6 text-center py-4">
+        <div className="w-16 h-16 mx-auto bg-primary border-2 border-black rounded-xl shadow-brutal flex items-center justify-center">
+          <Mail className="h-8 w-8 text-black" strokeWidth={2.5} />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black font-heading text-black">Verifikasi Email Anda</h2>
+          <p className="text-sm font-medium text-neutral-700">
+            Kami telah mengirimkan tautan konfirmasi pendaftaran ke alamat email{" "}
+            <strong className="font-mono text-black font-bold">{email}</strong>.
+          </p>
+          <p className="text-xs text-neutral-600">
+            Silakan buka email Anda dan klik tautan untuk mengaktifkan akun dan masuk ke dasbor Pendek-In.
+          </p>
+        </div>
+        <div className="pt-4 border-t-2 border-black flex justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsConfirmationSent(false)}
+            className="border-2 border-black font-bold shadow-brutal hover:bg-cream"
+          >
+            Kembali ke Formulir
+          </Button>
+          <Link href="/masuk">
+            <Button className="border-2 border-black font-bold shadow-brutal">
+              Ke Halaman Masuk
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
