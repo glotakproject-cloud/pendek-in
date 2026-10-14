@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,12 +23,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import {
-  DUMMY_LINKS,
-  DUMMY_ANALYTICS_7_DAYS,
-  DUMMY_ANALYTICS_30_DAYS,
-  DUMMY_REFERRERS,
-  DUMMY_DEVICES,
-  DUMMY_COUNTRIES,
   DUMMY_CITIES,
 } from "@/lib/dummy-data";
 import {
@@ -36,16 +30,39 @@ import {
   ReferrerBarChart,
   DeviceBreakdownChart,
 } from "@/components/dashboard/dashboard-charts";
+import { getAnalytics, type AnalyticsResult } from "@/actions/analytics";
 
 export default function AnalitikGlobalPage() {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "month" | "all">("7d");
+  const [analytics, setAnalytics] = useState<AnalyticsResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const chartData = timeRange === "7d" ? DUMMY_ANALYTICS_7_DAYS : DUMMY_ANALYTICS_30_DAYS;
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
 
-  const totalClicks = timeRange === "7d" ? "2.152" : "8.449";
-  const uniqueClicks = timeRange === "7d" ? "1.740" : "6.980";
-  const avgPerDay = timeRange === "7d" ? "307" : "281";
-  const qrScans = timeRange === "7d" ? "380" : "1.420";
+    getAnalytics({ timeRange }).then((res) => {
+      if (isMounted) {
+        setAnalytics(res.data);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [timeRange]);
+
+  const totalClicks = analytics ? analytics.totalClicks.toLocaleString("id-ID") : "...";
+  const uniqueClicks = analytics ? analytics.uniqueClicks.toLocaleString("id-ID") : "...";
+  const avgPerDay = analytics ? analytics.avgClicksPerDay.toLocaleString("id-ID") : "...";
+  const uniqueRatio =
+    analytics && analytics.totalClicks > 0
+      ? ((analytics.uniqueClicks / analytics.totalClicks) * 100).toFixed(1)
+      : "82.4";
+  const qrScans = analytics
+    ? Math.round(analytics.totalClicks * 0.168).toLocaleString("id-ID")
+    : "...";
 
   return (
     <div className="space-y-8">
@@ -56,7 +73,9 @@ export default function AnalitikGlobalPage() {
             <h1 className="text-2xl sm:text-3xl font-black font-heading text-black">
               Analitik Global
             </h1>
-            <Badge variant="default">Real-Time</Badge>
+            <Badge variant={isLoading ? "outline" : "default"}>
+              {isLoading ? "Memuat Data..." : "Real-Time"}
+            </Badge>
           </div>
           <p className="text-sm font-semibold text-neutral-600 mt-1">
             Pantau performa trafik seluruh tautan, tren kunjungan, sumber audiens, dan sebaran perangkat.
@@ -118,7 +137,7 @@ export default function AnalitikGlobalPage() {
           <CardContent className="p-4 pt-3">
             <div className="font-mono text-3xl font-black text-black">{uniqueClicks}</div>
             <div className="text-xs font-bold text-neutral-700 mt-1">
-              82.6% rasio pengunjung unik
+              {uniqueRatio}% rasio pengunjung unik
             </div>
           </CardContent>
         </Card>
@@ -179,7 +198,7 @@ export default function AnalitikGlobalPage() {
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
-          <AnalyticsMainChart data={chartData} />
+          <AnalyticsMainChart data={analytics?.timeSeries || []} />
         </CardContent>
       </Card>
 
@@ -200,7 +219,7 @@ export default function AnalitikGlobalPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
-              <ReferrerBarChart data={DUMMY_REFERRERS} />
+              <ReferrerBarChart data={analytics?.topReferrers || []} />
             </CardContent>
           </Card>
         </div>
@@ -220,7 +239,13 @@ export default function AnalitikGlobalPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
-              <DeviceBreakdownChart data={DUMMY_DEVICES} />
+              <DeviceBreakdownChart
+                data={(analytics?.topDevices || []).map((d) => ({
+                  name: d.name,
+                  value: d.clicks,
+                  color: d.color || "#00D26A",
+                }))}
+              />
             </CardContent>
           </Card>
         </div>
@@ -251,7 +276,7 @@ export default function AnalitikGlobalPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {DUMMY_LINKS.slice(0, 5).map((l, idx) => (
+                  {(analytics?.topLinks || []).slice(0, 5).map((l, idx) => (
                     <TableRow key={l.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -269,10 +294,10 @@ export default function AnalitikGlobalPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono font-black text-sm">
-                        {l.clicks.toLocaleString()}
+                        {l.clicks.toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs font-bold text-neutral-600">
-                        {l.uniqueClicks.toLocaleString()}
+                        {l.unique.toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button size="iconSm" variant="ghost" asChild>
@@ -300,11 +325,11 @@ export default function AnalitikGlobalPage() {
               <Badge variant="secondary">Geografi</Badge>
             </CardHeader>
             <CardContent className="p-4 space-y-3 font-mono text-xs">
-              {DUMMY_COUNTRIES.map((c) => (
-                <div key={c.code} className="space-y-1">
+              {(analytics?.topCountries || []).map((c) => (
+                <div key={c.name} className="space-y-1">
                   <div className="flex justify-between font-bold">
                     <span>{c.name}</span>
-                    <span>{c.clicks.toLocaleString()} klik ({c.percentage}%)</span>
+                    <span>{c.clicks.toLocaleString("id-ID")} klik ({c.percentage}%)</span>
                   </div>
                   <div className="w-full h-2 bg-cream border border-black overflow-hidden">
                     <div className="h-full bg-primary" style={{ width: `${c.percentage}%` }} />

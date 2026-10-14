@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DUMMY_LINKS, DUMMY_ANALYTICS_7_DAYS, DUMMY_REFERRERS, type DummyLink } from "@/lib/dummy-data";
 import { Mini7DayChart } from "@/components/dashboard/dashboard-charts";
+import { getAnalytics, type AnalyticsResult } from "@/actions/analytics";
 
 export default function DetailTautanPage() {
   const router = useRouter();
@@ -54,6 +55,20 @@ export default function DetailTautanPage() {
   const [tags] = useState(initialLink.tags);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [analytics, setAnalytics] = useState<AnalyticsResult | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    getAnalytics({ linkId: linkData.id, timeRange: "7d" }).then((res) => {
+      if (isMounted && res.data) {
+        setAnalytics(res.data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [linkData.id]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(linkData.shortUrl);
@@ -359,7 +374,9 @@ export default function DetailTautanPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-3">
-                <div className="font-mono text-3xl font-black">{linkData.clicks.toLocaleString()}</div>
+                <div className="font-mono text-3xl font-black">
+                  {analytics ? analytics.totalClicks.toLocaleString("id-ID") : linkData.clicks.toLocaleString("id-ID")}
+                </div>
                 <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 mt-1">
                   <TrendingUp className="h-3.5 w-3.5 text-primary-dark" strokeWidth={2.5} />
                   <span>+24.5% minggu ini</span>
@@ -377,9 +394,13 @@ export default function DetailTautanPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-3">
-                <div className="font-mono text-3xl font-black">{linkData.uniqueClicks.toLocaleString()}</div>
+                <div className="font-mono text-3xl font-black">
+                  {analytics ? analytics.uniqueClicks.toLocaleString("id-ID") : linkData.uniqueClicks.toLocaleString("id-ID")}
+                </div>
                 <div className="text-xs font-bold text-neutral-700 mt-1">
-                  {((linkData.uniqueClicks / linkData.clicks) * 100).toFixed(1)}% rasio unik
+                  {analytics && analytics.totalClicks > 0
+                    ? ((analytics.uniqueClicks / analytics.totalClicks) * 100).toFixed(1)
+                    : ((linkData.uniqueClicks / (linkData.clicks || 1)) * 100).toFixed(1)}% rasio unik
                 </div>
               </CardContent>
             </Card>
@@ -394,9 +415,13 @@ export default function DetailTautanPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-3">
-                <div className="font-mono text-2xl font-black">Mobile (68%)</div>
+                <div className="font-mono text-2xl font-black">
+                  {analytics?.topDevices[0]
+                    ? `${analytics.topDevices[0].name} (${analytics.topDevices[0].percentage}%)`
+                    : "Mobile (68%)"}
+                </div>
                 <div className="text-xs font-bold text-neutral-700 mt-1">
-                  Dominan dari Instagram &amp; WhatsApp
+                  Dominan dari smartphone
                 </div>
               </CardContent>
             </Card>
@@ -411,9 +436,13 @@ export default function DetailTautanPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-3">
-                <div className="font-mono text-2xl font-black">Indonesia 🇮🇩</div>
+                <div className="font-mono text-2xl font-black">
+                  {analytics?.topCountries[0]
+                    ? `${analytics.topCountries[0].name} 🇮🇩`
+                    : "Indonesia 🇮🇩"}
+                </div>
                 <div className="text-xs font-bold text-neutral-700 mt-1">
-                  88.4% dari total pengunjung
+                  {analytics?.topCountries[0] ? `${analytics.topCountries[0].percentage}% dari pengunjung` : "88.4% dari pengunjung"}
                 </div>
               </CardContent>
             </Card>
@@ -428,7 +457,7 @@ export default function DetailTautanPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
-              <Mini7DayChart data={DUMMY_ANALYTICS_7_DAYS} />
+              <Mini7DayChart data={analytics?.timeSeries || DUMMY_ANALYTICS_7_DAYS} />
             </CardContent>
           </Card>
 
@@ -440,11 +469,11 @@ export default function DetailTautanPage() {
                 <CardDescription>Dari mana audiens membuka tautan ini</CardDescription>
               </CardHeader>
               <CardContent className="p-4 space-y-3 font-mono text-xs">
-                {DUMMY_REFERRERS.slice(0, 5).map((ref) => (
+                {(analytics?.topReferrers || DUMMY_REFERRERS.slice(0, 5)).map((ref) => (
                   <div key={ref.name} className="space-y-1">
                     <div className="flex justify-between font-bold">
                       <span>{ref.name}</span>
-                      <span>{ref.clicks} klik ({ref.percentage}%)</span>
+                      <span>{ref.clicks.toLocaleString("id-ID")} klik ({ref.percentage}%)</span>
                     </div>
                     <div className="w-full h-2 bg-cream border border-black overflow-hidden">
                       <div

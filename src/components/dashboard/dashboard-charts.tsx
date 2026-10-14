@@ -248,7 +248,11 @@ export function ReferrerBarChart({ data }: { data: { name: string; clicks: numbe
   );
 }
 
-export function DeviceBreakdownChart({ data }: { data: { name: string; value: number; color: string }[] }) {
+export function DeviceBreakdownChart({
+  data,
+}: {
+  data: { name: string; value?: number; clicks?: number; color?: string }[];
+}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -292,9 +296,9 @@ export function DeviceBreakdownChart({ data }: { data: { name: string; value: nu
               return null;
             }}
           />
-          <Bar dataKey="value" stroke="#0A0A0A" strokeWidth={2} radius={0}>
+          <Bar dataKey={(d: { value?: number; clicks?: number }) => d.value ?? d.clicks ?? 0} stroke="#0A0A0A" strokeWidth={2} radius={0}>
             {data.map((entry, index) => (
-              <Cell key={`cell-device-${index}`} fill={entry.color} />
+              <Cell key={`cell-device-${index}`} fill={entry.color || "#00D26A"} />
             ))}
           </Bar>
         </BarChart>
