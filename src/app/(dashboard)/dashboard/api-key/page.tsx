@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,14 +33,34 @@ import {
   Code2,
   Terminal,
 } from "lucide-react";
-import { DUMMY_API_KEYS, type DummyApiKey } from "@/lib/dummy-data";
+import {
+  getApiKeys,
+  createApiKey,
+  revokeApiKey,
+  type ApiKeyItem,
+} from "@/actions/api-keys";
 
 export default function KelolaApiKeyPage() {
-  const [keys, setKeys] = useState<DummyApiKey[]>(DUMMY_API_KEYS);
+  const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tokenName, setTokenName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-  const [revokeTarget, setRevokeTarget] = useState<DummyApiKey | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<ApiKeyItem | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    getApiKeys().then((res) => {
+      if (isMounted && res.data) {
+        setKeys(res.data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenGenerateModal = () => {
     setTokenName("");
@@ -48,35 +68,34 @@ export default function KelolaApiKeyPage() {
     setIsModalOpen(true);
   };
 
-  const handleGenerateKey = (e: React.FormEvent) => {
+  const handleGenerateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tokenName.trim()) {
       toast.error("Nama API Key wajib diisi!");
       return;
     }
 
-    // Generate simulated 32-character key
-    const randomHex = Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join("");
-    const newFullKey = `pk_live_${randomHex}`;
-    const prefix = `${newFullKey.slice(0, 11)}...${newFullKey.slice(-4)}`;
+    setIsGenerating(true);
+    try {
+      const res = await createApiKey(tokenName);
+      if (!res.success || !res.fullKey) {
+        toast.error(res.error || "Gagal membuat API Key.");
+        setIsGenerating(false);
+        return;
+      }
 
-    const newKeyItem: DummyApiKey = {
-      id: `key_${Date.now()}`,
-      name: tokenName.trim(),
-      prefix: prefix,
-      fullKey: newFullKey,
-      createdAt: new Date().toISOString().split("T")[0],
-      lastUsedAt: "Belum pernah digunakan",
-      status: "active",
-    };
-
-    setGeneratedKey(newFullKey);
-    setKeys([newKeyItem, ...keys]);
-    toast.success("API Key Berhasil Dibuat! 🔑", {
-      description: "Segera salin kunci rahasia Anda sebelum menutup dialog.",
-    });
+      setGeneratedKey(res.fullKey);
+      if (res.keyItem) {
+        setKeys((prev) => [res.keyItem!, ...prev]);
+      }
+      toast.success("API Key Berhasil Dibuat! 🔑", {
+        description: "Segera salin kunci rahasia Anda sebelum menutup dialog.",
+      });
+    } catch {
+      toast.error("Terjadi kesalahan sistem saat membuat API Key.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopy = (text: string, label: string) => {
@@ -86,17 +105,31 @@ export default function KelolaApiKeyPage() {
     });
   };
 
-  const handleRevoke = () => {
+  const handleRevoke = async () => {
     if (!revokeTarget) return;
-    setKeys(
-      keys.map((k) =>
-        k.id === revokeTarget.id ? { ...k, status: "revoked" as const } : k
-      )
-    );
-    toast.success("API Key Dicabut!", {
-      description: `Kunci "${revokeTarget.name}" tidak dapat digunakan lagi.`,
-    });
-    setRevokeTarget(null);
+    setIsRevoking(true);
+    try {
+      const res = await revokeApiKey(revokeTarget.id);
+      if (!res.success) {
+        toast.error(res.error || "Gagal mencabut API Key.");
+        setIsRevoking(false);
+        return;
+      }
+
+      setKeys((prev) =>
+        prev.map((k) =>
+          k.id === revokeTarget.id ? { ...k, status: "revoked" as const } : k
+        )
+      );
+      toast.success("API Key Dicabut!", {
+        description: `Kunci "${revokeTarget.name}" tidak dapat digunakan lagi.`,
+      });
+    } catch {
+      toast.error("Terjadi kesalahan saat mencabut API Key.");
+    } finally {
+      setIsRevoking(false);
+      setRevokeTarget(null);
+    }
   };
 
   return (
@@ -279,11 +312,12 @@ export default function KelolaApiKeyPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsModalOpen(false)}
+                  disabled={isGenerating}
                 >
                   Batal
                 </Button>
-                <Button type="submit" variant="default">
-                  Generate Kunci Sekarang
+                <Button type="submit" variant="default" disabled={isGenerating}>
+                  {isGenerating ? "Membuat Kunci..." : "Generate Kunci Sekarang"}
                 </Button>
               </DialogFooter>
             </form>
@@ -350,11 +384,11 @@ export default function KelolaApiKeyPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRevokeTarget(null)}>
+            <Button variant="outline" onClick={() => setRevokeTarget(null)} disabled={isRevoking}>
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleRevoke}>
-              Ya, Cabut Kunci Ini
+            <Button variant="destructive" onClick={handleRevoke} disabled={isRevoking}>
+              {isRevoking ? "Mencabut Kunci..." : "Ya, Cabut Kunci Ini"}
             </Button>
           </DialogFooter>
         </DialogContent>
