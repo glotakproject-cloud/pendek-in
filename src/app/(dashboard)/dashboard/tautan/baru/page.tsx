@@ -24,7 +24,8 @@ import {
   Eye,
 } from "lucide-react";
 
-const RESERVED_SLUGS = ["admin", "api", "dashboard", "masuk", "daftar", "s", "harga", "profil"];
+import { createLink, checkSlugAvailability } from "@/actions/links";
+import { generateRandomSlug } from "@/lib/validations/link";
 
 export default function BuatTautanBaruPage() {
   const router = useRouter();
@@ -57,16 +58,12 @@ export default function BuatTautanBaruPage() {
   };
 
   const handleRandomizeSlug = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCustomSlug(result);
+    const randomCode = generateRandomSlug(6);
+    setCustomSlug(randomCode);
     setSlugStatus("available");
   };
 
-  const handleCheckSlug = () => {
+  const handleCheckSlug = async () => {
     const trimmed = customSlug.trim().toLowerCase();
     if (!trimmed) {
       toast.error("Masukkan kata back-half terlebih dahulu!");
@@ -75,27 +72,31 @@ export default function BuatTautanBaruPage() {
 
     setSlugStatus("checking");
 
-    setTimeout(() => {
-      if (RESERVED_SLUGS.includes(trimmed)) {
-        setSlugStatus("reserved");
-        toast.error("Slug Tidak Tersedia!", {
-          description: `Kata "${trimmed}" adalah kata terlarang (reserved word) sistem.`,
-        });
-      } else if (trimmed === "buket-nikah-jkt" || trimmed === "promo") {
-        setSlugStatus("taken");
-        toast.error("Slug Sudah Terpakai!", {
-          description: `Slug "${trimmed}" sudah digunakan pengguna lain. Coba alternatif lain.`,
-        });
-      } else {
+    try {
+      const res = await checkSlugAvailability(trimmed);
+      if (res.available) {
         setSlugStatus("available");
         toast.success("Slug Tersedia! 🎉", {
           description: `Slug "pendek.in/s/${trimmed}" siap Anda gunakan.`,
         });
+      } else if (res.status === "reserved") {
+        setSlugStatus("reserved");
+        toast.error("Slug Tidak Tersedia!", {
+          description: res.message,
+        });
+      } else {
+        setSlugStatus("taken");
+        toast.error("Slug Sudah Terpakai!", {
+          description: res.message,
+        });
       }
-    }, 400);
+    } catch {
+      setSlugStatus("idle");
+      toast.error("Gagal memeriksa ketersediaan slug.");
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!originalUrl) {
@@ -114,13 +115,33 @@ export default function BuatTautanBaruPage() {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await createLink({
+        original_url: originalUrl,
+        custom_slug: customSlug.trim() || undefined,
+        title: title.trim() || undefined,
+        description: notes.trim() || undefined,
+        tags: selectedTags,
+        expires_at: expiresAt || undefined,
+        password: password.trim() || undefined,
+      });
+
+      if (!res.success) {
+        toast.error("Gagal Membuat Tautan", {
+          description: res.error || "Terjadi kesalahan saat menyimpan tautan.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       toast.success("Tautan Berhasil Dibuat! 🚀", {
         description: `Tautan "${title || "Tautan Baru"}" telah aktif dan siap disebarkan.`,
       });
       router.push("/dashboard/tautan");
-    }, 600);
+    } catch {
+      toast.error("Terjadi kesalahan sistem saat membuat tautan.");
+      setIsSubmitting(false);
+    }
   };
 
   const previewSlug = customSlug.trim() || "link-anda";

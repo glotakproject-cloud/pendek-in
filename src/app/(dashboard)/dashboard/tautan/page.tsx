@@ -46,6 +46,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { DUMMY_LINKS, type DummyLink } from "@/lib/dummy-data";
+import { deleteLink } from "@/actions/links";
 
 export default function KelolaTautanPage() {
   const [links, setLinks] = useState<DummyLink[]>(DUMMY_LINKS);
@@ -53,6 +54,7 @@ export default function KelolaTautanPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "clicks" | "oldest">("newest");
   const [deleteTarget, setDeleteTarget] = useState<DummyLink | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter & Sort Logic
   const filteredLinks = links
@@ -80,13 +82,21 @@ export default function KelolaTautanPage() {
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setLinks((prev) => prev.filter((l) => l.id !== deleteTarget.id));
-    toast.success("Tautan Dihapus!", {
-      description: `Tautan "${deleteTarget.title}" telah berhasil dihapus.`,
-    });
-    setDeleteTarget(null);
+    setIsDeleting(true);
+    try {
+      await deleteLink(deleteTarget.id);
+      setLinks((prev) => prev.filter((l) => l.id !== deleteTarget.id));
+      toast.success("Tautan Dihapus!", {
+        description: `Tautan "${deleteTarget.title}" telah berhasil dihapus.`,
+      });
+    } catch {
+      toast.error("Gagal menghapus tautan");
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -422,11 +432,11 @@ export default function KelolaTautanPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Ya, Hapus Tautan
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Menghapus..." : "Ya, Hapus Tautan"}
             </Button>
           </DialogFooter>
         </DialogContent>
