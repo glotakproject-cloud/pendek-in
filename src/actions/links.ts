@@ -737,3 +737,37 @@ export async function getLinkDetail(idOrSlug: string) {
     data: found,
   };
 }
+
+/**
+ * 7. Verifikasi Kata Sandi Tautan Terproteksi
+ */
+export async function verifyLinkPassword(slug: string, passwordAttempt: string) {
+  if (!slug || !passwordAttempt) {
+    return { success: false, error: "Slug dan kata sandi wajib diisi" };
+  }
+
+  const detail = await getLinkDetail(slug);
+  if (!detail.success || !detail.data) {
+    return { success: false, error: "Tautan tidak ditemukan" };
+  }
+
+  const link = detail.data;
+  if (!link.password_hash) {
+    return { success: true, original_url: link.original_url };
+  }
+
+  const attemptHash = crypto
+    .createHash("sha256")
+    .update(passwordAttempt)
+    .digest("hex");
+
+  if (attemptHash !== link.password_hash) {
+    return { success: false, error: "Kata sandi yang Anda masukkan salah. Coba lagi." };
+  }
+
+  return {
+    success: true,
+    original_url: link.original_url,
+  };
+}
+
