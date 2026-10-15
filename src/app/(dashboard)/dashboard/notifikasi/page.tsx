@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,14 +9,12 @@ import {
   Bell,
   Mail,
   ShieldCheck,
-  Clock,
   CheckCheck,
-  AlertTriangle,
-  Award,
-  Zap,
   Trash2,
+  Save,
 } from "lucide-react";
 import { DUMMY_NOTIFICATIONS, type DummyNotification } from "@/lib/dummy-data";
+import { getUserProfile, updateUserProfile } from "@/actions/profile";
 
 export default function NotifikasiPage() {
   // Preferences State
@@ -24,20 +22,45 @@ export default function NotifikasiPage() {
   const [clickMilestones, setClickMilestones] = useState(true);
   const [securityAlerts, setSecurityAlerts] = useState(true);
   const [expiryWarnings, setExpiryWarnings] = useState(true);
-  const [productUpdates, setProductUpdates] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [userEmail, setUserEmail] = useState("pengguna@pendek.in");
 
   // Notification Items State
   const [notifications, setNotifications] = useState<DummyNotification[]>(DUMMY_NOTIFICATIONS);
 
-  const handleSavePreferences = () => {
+  useEffect(() => {
+    let isMounted = true;
+    getUserProfile().then((res) => {
+      if (isMounted && res.success && res.data) {
+        setWeeklyDigest(res.data.emailWeeklyDigest);
+        if (res.data.email) setUserEmail(res.data.email);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSavePreferences = async () => {
     setIsSavingPrefs(true);
-    setTimeout(() => {
-      setIsSavingPrefs(false);
-      toast.success("Preferensi Notifikasi Disimpan! 🔔", {
-        description: "Pengaturan pengiriman email berkala Anda telah diperbarui.",
+    try {
+      const res = await updateUserProfile({
+        emailWeeklyDigest: weeklyDigest,
       });
-    }, 400);
+
+      if (res.success) {
+        toast.success("Preferensi Notifikasi Disimpan! 🔔", {
+          description: "Pengaturan pengiriman ringkasan mingguan Anda telah diperbarui ke database.",
+        });
+      } else {
+        toast.error(res.error || "Gagal menyimpan preferensi");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan sistem.");
+    } finally {
+      setIsSavingPrefs(false);
+    }
   };
 
   const handleMarkAllRead = () => {
@@ -91,17 +114,17 @@ export default function NotifikasiPage() {
                 <CardTitle className="text-lg">Preferensi Email</CardTitle>
               </div>
               <CardDescription className="text-black/80 font-medium text-xs">
-                Pilih jenis informasi yang ingin Anda terima via email (dimas.pratama@gmail.com).
+                Pilih jenis informasi yang ingin Anda terima via email ({userEmail}).
               </CardDescription>
             </CardHeader>
 
             <CardContent className="p-5 space-y-4">
               {/* Toggle 1: Weekly Digest */}
               <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-cream shadow-brutal-sm">
-                <div className="space-y-0.5">
+                <div>
                   <div className="text-xs font-black text-black">Ringkasan Mingguan (Weekly Digest)</div>
-                  <div className="text-[11px] font-semibold text-neutral-600 leading-tight">
-                    Laporan statistik klik dan performa link teratas dikirim setiap hari Senin pagi.
+                  <div className="text-[11px] font-semibold text-neutral-600">
+                    Laporan komprehensif performa tautan dan total klik setiap hari Senin.
                   </div>
                 </div>
                 <input
@@ -114,10 +137,10 @@ export default function NotifikasiPage() {
 
               {/* Toggle 2: Click Milestones */}
               <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-white shadow-brutal-sm">
-                <div className="space-y-0.5">
-                  <div className="text-xs font-black text-black">Pencapaian Milestone Klik</div>
-                  <div className="text-[11px] font-semibold text-neutral-600 leading-tight">
-                    Notifikasi otomatis saat link Anda menembus 100, 500, atau 1.000 total klik.
+                <div>
+                  <div className="text-xs font-black text-black">Pencapaian Target Klik (Milestones)</div>
+                  <div className="text-[11px] font-semibold text-neutral-600">
+                    Notifikasi ketika tautan Anda menembus 100, 1.000, atau 10.000 klik.
                   </div>
                 </div>
                 <input
@@ -130,10 +153,10 @@ export default function NotifikasiPage() {
 
               {/* Toggle 3: Security Alerts */}
               <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-white shadow-brutal-sm">
-                <div className="space-y-0.5">
+                <div>
                   <div className="text-xs font-black text-black">Peringatan Keamanan Akun</div>
-                  <div className="text-[11px] font-semibold text-neutral-600 leading-tight">
-                    Login dari perangkat baru atau pembuatan API Key baru yang tidak biasa.
+                  <div className="text-[11px] font-semibold text-neutral-600">
+                    Pemberitahuan bila ada pembuatan API Key baru atau login dari browser tak dikenal.
                   </div>
                 </div>
                 <input
@@ -145,11 +168,11 @@ export default function NotifikasiPage() {
               </div>
 
               {/* Toggle 4: Expiry Warnings */}
-              <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-white shadow-brutal-sm">
-                <div className="space-y-0.5">
+              <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-cream shadow-brutal-sm">
+                <div>
                   <div className="text-xs font-black text-black">Peringatan Tautan Kadaluarsa</div>
-                  <div className="text-[11px] font-semibold text-neutral-600 leading-tight">
-                    Pengingat 3 hari sebelum tanggal kedaluwarsa link promo Anda berakhir.
+                  <div className="text-[11px] font-semibold text-neutral-600">
+                    Email pengingat 24 jam sebelum short link yang memiliki batas waktu dinonaktifkan.
                   </div>
                 </div>
                 <input
@@ -160,122 +183,81 @@ export default function NotifikasiPage() {
                 />
               </div>
 
-              {/* Toggle 5: Product Updates */}
-              <div className="flex items-start justify-between gap-3 p-3 border-2 border-black bg-cream shadow-brutal-sm">
-                <div className="space-y-0.5">
-                  <div className="text-xs font-black text-black">Info Fitur Baru Pendek-In</div>
-                  <div className="text-[11px] font-semibold text-neutral-600 leading-tight">
-                    Kabar pembaruan teknologi, rilis fitur baru, dan tips optimasi tautan.
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={productUpdates}
-                  onChange={(e) => setProductUpdates(e.target.checked)}
-                  className="w-5 h-5 border-2 border-black accent-primary cursor-pointer mt-0.5 shrink-0"
-                />
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  onClick={handleSavePreferences}
-                  variant="default"
-                  disabled={isSavingPrefs}
-                  className="w-full"
-                >
-                  {isSavingPrefs ? "Menyimpan..." : "Simpan Preferensi Email"}
-                </Button>
-              </div>
+              <Button
+                onClick={handleSavePreferences}
+                disabled={isSavingPrefs}
+                variant="default"
+                className="w-full gap-2 mt-2"
+              >
+                <Save className="h-4 w-4" strokeWidth={2.5} />
+                <span>{isSavingPrefs ? "Menyimpan..." : "Simpan Preferensi Email"}</span>
+              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Kolom Kanan: Riwayat Notifikasi Terbaru (7 cols) */}
+        {/* Kolom Kanan: Riwayat Notifikasi Akun (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-heading font-black text-lg text-black flex items-center gap-2">
-              <Bell className="h-5 w-5 text-black" strokeWidth={2.5} />
-              <span>Aktivitas &amp; Notifikasi Terbaru ({notifications.length})</span>
+            <h2 className="text-lg font-black font-heading text-black flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary-dark" strokeWidth={2.5} />
+              <span>Aktivitas &amp; Log Notifikasi</span>
             </h2>
+            <span className="text-xs font-mono font-bold text-neutral-500">
+              Menampilkan {notifications.length} notifikasi
+            </span>
           </div>
 
           {notifications.length === 0 ? (
-            <Card className="p-8 text-center border-dashed">
-              <p className="text-sm font-semibold text-neutral-600">
-                Tidak ada notifikasi saat ini. Anda telah membaca semuanya!
-              </p>
+            <Card>
+              <CardContent className="p-8 text-center space-y-2">
+                <ShieldCheck className="h-8 w-8 text-primary mx-auto" />
+                <p className="font-heading font-black text-base text-black">Tidak Ada Notifikasi</p>
+                <p className="text-xs font-semibold text-neutral-600">
+                  Kotak masuk notifikasi Anda bersih. Semua aktivitas terbaru akan muncul di sini.
+                </p>
+              </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {notifications.map((notif) => {
-                const getCategoryStyle = () => {
-                  switch (notif.category) {
-                    case "milestone":
-                      return { badge: "bg-primary text-black", icon: Award };
-                    case "security":
-                      return { badge: "bg-warning text-black", icon: ShieldCheck };
-                    case "expiry":
-                      return { badge: "bg-destructive text-white", icon: AlertTriangle };
-                    default:
-                      return { badge: "bg-info text-white", icon: Zap };
-                  }
-                };
+            notifications.map((item) => (
+              <Card
+                key={item.id}
+                className={`transition-all ${
+                  item.read ? "bg-white opacity-80" : "bg-cream/40 border-2 border-black shadow-brutal-sm"
+                }`}
+              >
+                <CardContent className="p-4 flex items-start justify-between gap-3">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-heading font-black text-sm text-black">
+                        {item.title}
+                      </span>
+                      {!item.read && (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
+                          Baru
+                        </Badge>
+                      )}
+                      <span className="text-[11px] font-mono text-neutral-500 font-bold">
+                        &bull; {item.timestamp}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-neutral-700 leading-relaxed">
+                      {item.message}
+                    </p>
+                  </div>
 
-                const style = getCategoryStyle();
-                const IconComponent = style.icon;
-
-                return (
-                  <Card
-                    key={notif.id}
-                    className={`transition-all ${
-                      !notif.read ? "border-[3px] bg-white shadow-brutal" : "bg-cream/40 opacity-80"
-                    }`}
+                  <Button
+                    size="iconSm"
+                    variant="ghost"
+                    onClick={() => handleDeleteNotif(item.id)}
+                    className="text-neutral-400 hover:text-destructive shrink-0"
+                    title="Hapus Notifikasi"
                   >
-                    <CardContent className="p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`p-2 border-2 border-black shrink-0 ${style.badge}`}
-                          >
-                            <IconComponent className="h-4 w-4" strokeWidth={2.5} />
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-heading font-black text-sm text-black">
-                                {notif.title}
-                              </h3>
-                              {!notif.read && (
-                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
-                                  BARU
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs font-semibold text-neutral-700 leading-normal">
-                              {notif.message}
-                            </p>
-                            <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-neutral-500 pt-1">
-                              <Clock className="h-3 w-3" strokeWidth={2.5} />
-                              <span>{notif.timestamp}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button
-                          size="iconSm"
-                          variant="ghost"
-                          title="Hapus notifikasi"
-                          onClick={() => handleDeleteNotif(notif.id)}
-                          className="shrink-0 text-neutral-400 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                    <Trash2 className="h-4 w-4" strokeWidth={2} />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))
           )}
         </div>
       </div>

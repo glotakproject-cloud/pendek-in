@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -15,7 +15,9 @@ import {
   Palette,
   RotateCcw,
   Sliders,
+  CheckCircle2,
 } from "lucide-react";
+import { getLinkDetail } from "@/actions/links";
 import { DUMMY_LINKS } from "@/lib/dummy-data";
 
 const FG_COLOR_PRESETS = [
@@ -39,17 +41,93 @@ export default function EditorQRPage() {
   const params = useParams();
   const rawId = (params?.id as string) || "1";
 
-  const link =
+  // Link information state
+  const fallbackLink =
     DUMMY_LINKS.find((l) => l.id === rawId || l.slug === rawId) || DUMMY_LINKS[0];
 
+  const [linkInfo, setLinkInfo] = useState<{
+    id: string;
+    title: string;
+    slug: string;
+    originalUrl: string;
+    shortUrl: string;
+  }>({
+    id: fallbackLink.id,
+    title: fallbackLink.title,
+    slug: fallbackLink.slug,
+    originalUrl: fallbackLink.originalUrl,
+    shortUrl: fallbackLink.shortUrl,
+  });
+
+  const [isLoadingLink, setIsLoadingLink] = useState(true);
+
   // QR Customization States
-  const [fgColor, setFgColor] = useState(link.qrColor || "#0A0A0A");
-  const [bgColor, setBgColor] = useState(link.qrBg || "#FFFFFF");
+  const [fgColor, setFgColor] = useState("#0A0A0A");
+  const [bgColor, setBgColor] = useState("#FFFFFF");
   const [size, setSize] = useState<number>(240);
   const [includeMargin, setIncludeMargin] = useState(true);
   const [level, setLevel] = useState<"L" | "M" | "Q" | "H">("Q");
 
   const qrContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real link detail from Supabase
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingLink(true);
+
+    getLinkDetail(rawId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.success && res.data) {
+          const l = res.data;
+          const origin = typeof window !== "undefined" ? window.location.origin : "https://pendek.in";
+          const shortUrl = `${origin}/s/${l.slug}`;
+
+          setLinkInfo({
+            id: l.id,
+            title: l.title || l.slug,
+            slug: l.slug,
+            originalUrl: l.original_url,
+            shortUrl,
+          });
+
+          // Check if saved colors exist in localStorage
+          try {
+            const savedQr = localStorage.getItem(`pendekin_qr_${l.id}`);
+            if (savedQr) {
+              const parsed = JSON.parse(savedQr);
+              if (parsed.fgColor) setFgColor(parsed.fgColor);
+              if (parsed.bgColor) setBgColor(parsed.bgColor);
+              if (parsed.level) setLevel(parsed.level);
+            }
+          } catch {
+            // ignore localStorage error
+          }
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingLink(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawId]);
+
+  // Save color preferences to localStorage
+  const handleSaveQrPreferences = () => {
+    try {
+      localStorage.setItem(
+        `pendekin_qr_${linkInfo.id}`,
+        JSON.stringify({ fgColor, bgColor, level, includeMargin })
+      );
+      toast.success("Pengaturan QR Disimpan! 💾", {
+        description: "Warna dan konfigurasi QR ini akan diingat untuk tautan ini.",
+      });
+    } catch {
+      toast.info("Pengaturan QR aktif diterapkan.");
+    }
+  };
 
   // Download SVG
   const handleDownloadSVG = () => {
@@ -63,18 +141,18 @@ export default function EditorQRPage() {
 
     const downloadLink = document.createElement("a");
     downloadLink.href = svgUrl;
-    downloadLink.download = `qr-${link.slug}.svg`;
+    downloadLink.download = `qr-${linkInfo.slug}.svg`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(svgUrl);
 
     toast.success("QR Berhasil Diunduh (SVG)! 🎨", {
-      description: "Format SVG vektor siap digunakan untuk materi cetak resolusi tinggi.",
+      description: "Format SVG vektor siap digunakan untuk materi cetak resolusi tinggi tanpa pecah.",
     });
   };
 
-  // Download PNG via canvas conversion
+  // Download PNG via high-resolution canvas conversion
   const handleDownloadPNG = () => {
     if (!qrContainerRef.current) return;
     const svgElement = qrContainerRef.current.querySelector("svg");
@@ -85,9 +163,9 @@ export default function EditorQRPage() {
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
-    // Scale up for high-resolution PNG
-    canvas.width = 1000;
-    canvas.height = 1000;
+    // High-resolution output: 1200x1200px
+    canvas.width = 1200;
+    canvas.height = 1200;
 
     img.onload = () => {
       if (ctx) {
@@ -98,13 +176,13 @@ export default function EditorQRPage() {
 
         const downloadLink = document.createElement("a");
         downloadLink.href = pngUrl;
-        downloadLink.download = `qr-${link.slug}.png`;
+        downloadLink.download = `qr-${linkInfo.slug}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
 
-        toast.success("QR Berhasil Diunduh (PNG)! 🖼️", {
-          description: "Gambar PNG resolusi 1000x1000 siap dibagikan.",
+        toast.success("QR Berhasil Diunduh (PNG HD)! 🖼️", {
+          description: "Gambar PNG resolusi 1200x1200 siap dibagikan ke media sosial.",
         });
       }
     };
@@ -113,9 +191,9 @@ export default function EditorQRPage() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(link.shortUrl);
-    toast.success("Short Link Disalin!", {
-      description: link.shortUrl,
+    navigator.clipboard.writeText(linkInfo.shortUrl);
+    toast.success("Short Link Disalin! 📋", {
+      description: linkInfo.shortUrl,
     });
   };
 
@@ -135,7 +213,7 @@ export default function EditorQRPage() {
         <div>
           <Button variant="ghost" size="sm" asChild className="p-0 h-auto hover:bg-transparent mb-1">
             <Link
-              href={`/dashboard/tautan/${link.id}`}
+              href={`/dashboard/tautan/${linkInfo.id}`}
               className="text-neutral-600 hover:text-black flex items-center gap-1 font-bold text-sm"
             >
               <ArrowLeft className="h-4 w-4" strokeWidth={2.5} />
@@ -146,17 +224,25 @@ export default function EditorQRPage() {
             <h1 className="text-2xl sm:text-3xl font-black font-heading text-black">
               Editor Kode QR Dinamis
             </h1>
-            <Badge variant="secondary">Kustomisasi</Badge>
+            <Badge variant={isLoadingLink ? "outline" : "secondary"}>
+              {isLoadingLink ? "Memuat..." : "Live Data"}
+            </Badge>
           </div>
           <p className="text-sm font-semibold text-neutral-600">
-            Sesuaikan palet warna, rasio kontras, dan unduh dalam format PNG atau SVG vektor.
+            Sesuaikan palet warna, rasio kontras, dan unduh dalam format PNG atau SVG vektor resolusi tinggi.
           </p>
         </div>
 
-        <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 shrink-0">
-          <RotateCcw className="h-4 w-4" strokeWidth={2.5} />
-          <span>Reset Warna</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
+            <RotateCcw className="h-4 w-4" strokeWidth={2.5} />
+            <span>Reset</span>
+          </Button>
+          <Button variant="default" size="sm" onClick={handleSaveQrPreferences} className="gap-1.5">
+            <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+            <span>Simpan Gaya</span>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -184,7 +270,7 @@ export default function EditorQRPage() {
                       onClick={() => setFgColor(preset.color)}
                       className={`p-2.5 border-2 border-black flex items-center gap-2 text-xs font-bold transition-all ${
                         isSelected
-                          ? "bg-primary text-black shadow-brutal-sm"
+                          ? "bg-primary text-black shadow-brutal-sm font-black"
                           : "bg-white hover:bg-cream"
                       }`}
                     >
@@ -226,7 +312,7 @@ export default function EditorQRPage() {
             <CardHeader>
               <CardTitle>Warna Latar Belakang (Background)</CardTitle>
               <CardDescription>
-                Pastikan warna latar memiliki kontras yang cukup dengan foreground agar mudah discan.
+                Pastikan warna latar memiliki kontras yang cukup dengan foreground agar mudah discan oleh kamera smartphone.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -240,7 +326,7 @@ export default function EditorQRPage() {
                       onClick={() => setBgColor(preset.color)}
                       className={`p-2.5 border-2 border-black flex items-center gap-2 text-xs font-bold transition-all ${
                         isSelected
-                          ? "bg-primary text-black shadow-brutal-sm"
+                          ? "bg-primary text-black shadow-brutal-sm font-black"
                           : "bg-white hover:bg-cream"
                       }`}
                     >
@@ -282,11 +368,11 @@ export default function EditorQRPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Sliders className="h-5 w-5 text-black" strokeWidth={2.5} />
-                <CardTitle>Pengaturan Ukuran &amp; Resolusi</CardTitle>
+                <CardTitle>Pengaturan Ukuran &amp; Koreksi Error</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
-              {/* Presets Ukuran */}
+              {/* Presets Ukuran Preview */}
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-wider text-black">
                   Ukuran Tampilan Pratinjau
@@ -312,7 +398,7 @@ export default function EditorQRPage() {
               {/* Error Correction Level */}
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-wider text-black">
-                  Tingkat Koreksi Error (Error Correction)
+                  Tingkat Koreksi Error (Error Correction Level)
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {[
@@ -340,9 +426,11 @@ export default function EditorQRPage() {
               {/* Include Margin Toggle */}
               <div className="flex items-center justify-between p-3 border-2 border-black bg-cream shadow-brutal-sm">
                 <div>
-                  <div className="text-xs font-black text-black">Sertakan Batas Putih (Margin / Quiet Zone)</div>
+                  <div className="text-xs font-black text-black">
+                    Sertakan Batas Margin (Quiet Zone)
+                  </div>
                   <div className="text-[11px] font-semibold text-neutral-600">
-                    Batas penting agar kamera HP dapat membedakan kode QR dari background sekitar
+                    Batas putih penting agar kamera smartphone dapat mendeteksi kode QR dengan cepat.
                   </div>
                 </div>
                 <input
@@ -361,10 +449,10 @@ export default function EditorQRPage() {
           <Card className="border-[3px] border-black bg-white shadow-brutal-xl">
             <CardHeader className="bg-primary border-b-2 border-black p-4 text-center">
               <span className="text-[11px] font-mono font-black uppercase tracking-wider bg-white px-2 py-0.5 border border-black shadow-brutal-sm inline-block">
-                Pratinjau Nyata (Live QR)
+                Pratinjau Kode QR
               </span>
-              <h3 className="font-heading font-black text-lg text-black mt-1">
-                {link.title}
+              <h3 className="font-heading font-black text-lg text-black mt-1 line-clamp-1">
+                {linkInfo.title}
               </h3>
             </CardHeader>
 
@@ -376,7 +464,7 @@ export default function EditorQRPage() {
                 style={{ backgroundColor: bgColor }}
               >
                 <QRCodeSVG
-                  value={link.shortUrl}
+                  value={linkInfo.shortUrl}
                   size={size}
                   fgColor={fgColor}
                   bgColor={bgColor}
@@ -388,10 +476,10 @@ export default function EditorQRPage() {
               {/* Link Info Box */}
               <div className="w-full p-3 border-2 border-black bg-cream space-y-1 text-center font-mono">
                 <span className="text-[10px] uppercase font-black text-neutral-500">
-                  Target Tautan Terhubung:
+                  Target Tautan:
                 </span>
                 <div className="text-xs font-black text-primary-dark break-all">
-                  {link.shortUrl}
+                  {linkInfo.shortUrl}
                 </div>
               </div>
 
@@ -404,7 +492,7 @@ export default function EditorQRPage() {
                   className="w-full gap-2 text-sm"
                 >
                   <Download className="h-4 w-4" strokeWidth={2.5} />
-                  <span>Unduh Gambar PNG (HD)</span>
+                  <span>Unduh Gambar PNG (1200px HD)</span>
                 </Button>
 
                 <Button
