@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { sendSecurityAlertEmail } from "@/lib/email";
 
 // ==========================================
 // SKEMA VALIDASI ZOD (PRD BAB 8 & 10)
@@ -96,6 +97,27 @@ export async function signInAction(input: LoginInput) {
         success: false,
         error: "Akun Anda telah disuspend oleh administrator sistem karena pelanggaran kebijakan.",
       };
+    }
+
+    // Kirim notifikasi keamanan login perangkat baru (fire and forget)
+    try {
+      const headerList = await headers();
+      const userAgent = headerList.get("user-agent") || undefined;
+      const forwardedFor = headerList.get("x-forwarded-for");
+      const ipAddress = forwardedFor ? forwardedFor.split(",")[0].trim() : undefined;
+
+      sendSecurityAlertEmail({
+        to: email,
+        type: "new_device_login",
+        metadata: {
+          userAgent,
+          ipAddress,
+        },
+      }).catch((err) => {
+        console.error("[LOGIN SECURITY ALERT ERROR]:", err);
+      });
+    } catch {
+      // Abaikan jika headers() tidak tersedia di context tertentu
     }
 
     if (profile?.role === "super_admin") {

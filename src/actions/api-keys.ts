@@ -3,6 +3,7 @@
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sendSecurityAlertEmail } from "@/lib/email";
 
 export interface ApiKeyItem {
   id: string;
@@ -178,6 +179,20 @@ export async function createApiKey(name: string): Promise<{
         status: "active",
       };
 
+      // Kirim Security Alert Email (Fire-and-forget secara aman)
+      if (user.email) {
+        sendSecurityAlertEmail({
+          to: user.email,
+          type: "api_key_created",
+          metadata: {
+            keyName: trimmedName,
+            keyPrefix: keyPrefix,
+          },
+        }).catch((err) => {
+          console.error("[SECURITY ALERT EMAIL ERROR]:", err);
+        });
+      }
+
       return {
         success: true,
         fullKey: fullToken,
@@ -204,6 +219,16 @@ export async function createApiKey(name: string): Promise<{
 
   globalStore.__mockApiKeys?.unshift(newMockRecord);
   revalidatePath("/dashboard/api-key");
+
+  // Simulasi Security Alert Email
+  sendSecurityAlertEmail({
+    to: "dimas.pratama@gmail.com",
+    type: "api_key_created",
+    metadata: {
+      keyName: trimmedName,
+      keyPrefix: keyPrefix,
+    },
+  }).catch(() => {});
 
   return {
     success: true,

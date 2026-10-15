@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Akun Pendek-In</title>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #F5F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0A0A0A;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #FFFFFF; border: 3px solid #0A0A0A; box-shadow: 6px 6px 0px #0A0A0A;">
+    <!-- Header Banner -->
+    <tr>
+      <td style="background-color: #00D26A; padding: 24px 32px; border-bottom: 3px solid #0A0A0A;">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <span style="display: inline-block; background-color: #0A0A0A; color: #FFFFFF; font-size: 11px; font-weight: 900; letter-spacing: 1px; padding: 4px 8px; text-transform: uppercase;">
+                Pendek-In URL Shortener
+              </span>
+              <h1 style="margin: 8px 0 0 0; font-size: 24px; font-weight: 900; color: #0A0A0A; text-transform: uppercase;">
+                Verifikasi Email Anda 🚀
+              </h1>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Body Content -->
+    <tr>
+      <td style="padding: 32px;">
+        <p style="font-size: 15px; font-weight: 600; line-height: 1.6; margin: 0 0 16px 0; color: #0A0A0A;">
+          Halo, Sobat Pendek-In!
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; margin: 0 0 24px 0; color: #333333;">
+          Terima kasih telah mendaftar di <strong>Pendek-In</strong>. Untuk mengaktifkan akun Anda dan mulai memperpendek tautan serta membuat Kode QR kustom, silakan konfirmasi email Anda dengan menekan tombol di bawah ini:
+        </p>
+
+        <!-- CTA Button -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0;">
+          <tr>
+            <td align="center">
+              <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; background-color: #00D26A; color: #0A0A0A; font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; padding: 14px 32px; border: 3px solid #0A0A0A; box-shadow: 4px 4px 0px #0A0A0A;">
+                Konfirmasi Akun Sekarang &rarr;
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Security Note -->
+        <div style="background-color: #F5F5F0; border: 2px solid #0A0A0A; padding: 16px; margin: 24px 0 0 0;">
+          <p style="font-size: 12px; font-weight: 700; margin: 0 0 4px 0; color: #0A0A0A; text-transform: uppercase;">
+            ⚠️ Peringatan Keamanan:
+          </p>
+          <p style="font-size: 12px; margin: 0; color: #555555; line-height: 1.5;">
+            Tautan verifikasi ini berlaku selama 24 jam. Jika Anda tidak merasa mendaftar di Pendek-In, abaikan email ini secara aman.
+          </p>
+        </div>
+
+        <p style="font-size: 12px; color: #777777; margin: 24px 0 0 0; line-height: 1.4; word-break: break-all;">
+          Atau salin tautan berikut ke browser Anda:<br>
+          <a href="{{ .ConfirmationURL }}" style="color: #00A653; font-weight: 700;">{{ .ConfirmationURL }}</a>
+        </p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #0A0A0A; color: #FFFFFF; padding: 20px 32px; text-align: center; border-top: 3px solid #0A0A0A;">
+        <p style="font-size: 12px; margin: 0; font-weight: 600;">
+          &copy; 2026 Pendek-In. Hak Cipta Dilindungi. URL Shortener Neobrutalism Indonesia.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
