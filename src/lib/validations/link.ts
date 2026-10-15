@@ -1,5 +1,6 @@
 import { z } from "zod";
 import crypto from "crypto";
+import { sanitizeText, sanitizeSlug, validateUrlSecurity } from "@/lib/security";
 
 // ==========================================
 // SKEMA VALIDASI ZOD UNTUK TAUTAN (PRD BAB 8 & 10)
@@ -10,8 +11,9 @@ export const checkSlugSchema = z.object({
     .string()
     .min(3, "Slug kustom minimal 3 karakter")
     .max(50, "Slug kustom maksimal 50 karakter")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
+    .transform((val) => sanitizeSlug(val))
+    .refine(
+      (val) => /^[a-z0-9_-]+$/.test(val),
       "Slug hanya boleh berisi huruf, angka, tanda strip (-), atau garis bawah (_)"
     ),
 });
@@ -20,22 +22,28 @@ export const createLinkSchema = z.object({
   original_url: z
     .string()
     .min(1, "URL Asli wajib diisi")
-    .url("Format URL tidak valid (harus diawali http:// atau https://)"),
+    .refine((val) => validateUrlSecurity(val).valid, {
+      message: "Format URL tidak valid atau mengarah ke host lokal/terlarang (SSRF protection)",
+    })
+    .transform((val) => validateUrlSecurity(val).sanitizedUrl || val.trim()),
   custom_slug: z
     .string()
     .optional()
-    .transform((val) => (val?.trim() === "" ? undefined : val?.trim())),
+    .transform((val) => (val?.trim() ? sanitizeSlug(val) : undefined)),
   title: z
     .string()
     .max(150, "Judul tautan maksimal 150 karakter")
     .optional()
-    .transform((val) => (val?.trim() === "" ? undefined : val?.trim())),
+    .transform((val) => (val?.trim() ? sanitizeText(val, 150) : undefined)),
   description: z
     .string()
     .max(500, "Deskripsi tautan maksimal 500 karakter")
     .optional()
-    .transform((val) => (val?.trim() === "" ? undefined : val?.trim())),
-  tags: z.array(z.string()).optional().default([]),
+    .transform((val) => (val?.trim() ? sanitizeText(val, 500) : undefined)),
+  tags: z
+    .array(z.string().transform((t) => sanitizeText(t, 30)))
+    .optional()
+    .default([]),
   expires_at: z
     .string()
     .optional()
@@ -53,21 +61,26 @@ export const updateLinkSchema = z.object({
   original_url: z
     .string()
     .min(1, "URL Asli wajib diisi")
-    .url("Format URL tidak valid (harus diawali http:// atau https://)"),
+    .refine((val) => validateUrlSecurity(val).valid, {
+      message: "Format URL tidak valid atau mengarah ke host lokal/terlarang (SSRF protection)",
+    })
+    .transform((val) => validateUrlSecurity(val).sanitizedUrl || val.trim()),
   title: z
     .string()
     .max(150, "Judul tautan maksimal 150 karakter")
-    .optional()
-    .nullable(),
+    .nullish()
+    .transform((val) => (val?.trim() ? sanitizeText(val, 150) : val)),
   description: z
     .string()
     .max(500, "Deskripsi tautan maksimal 500 karakter")
-    .optional()
-    .nullable(),
-  tags: z.array(z.string()).optional(),
+    .nullish()
+    .transform((val) => (val?.trim() ? sanitizeText(val, 500) : val)),
+  tags: z
+    .array(z.string().transform((t) => sanitizeText(t, 30)))
+    .optional(),
   status: z.enum(["active", "expired", "blocked"]).optional(),
-  expires_at: z.string().optional().nullable(),
-  password: z.string().optional().nullable(),
+  expires_at: z.string().nullish(),
+  password: z.string().nullish(),
 });
 
 export type CreateLinkInput = z.infer<typeof createLinkSchema>;

@@ -1,32 +1,6 @@
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-// In-Memory Rate Limiter (Sliding Window 60 detik, max 120 requests)
-interface RateLimitRecord {
-  timestamps: number[];
-}
-
-const rateLimitStore = new Map<string, RateLimitRecord>();
-
-function isRateLimited(keyId: string, limit = 120, windowMs = 60000): boolean {
-  const now = Date.now();
-  let record = rateLimitStore.get(keyId);
-
-  if (!record) {
-    record = { timestamps: [] };
-    rateLimitStore.set(keyId, record);
-  }
-
-  // Bersihkan timestamp yang sudah di luar jendela 60 detik
-  record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
-
-  if (record.timestamps.length >= limit) {
-    return true; // Limit terlampaui
-  }
-
-  record.timestamps.push(now);
-  return false;
-}
+import { checkApiRateLimit } from "@/lib/rate-limit";
 
 export interface ApiAuthSuccess {
   authorized: true;
@@ -123,13 +97,14 @@ export async function authenticateApiKey(request: Request): Promise<ApiAuthResul
         };
       }
 
-      // Pengecekan Rate Limit 120/menit
-      if (isRateLimited(apiKey.id, 120, 60000)) {
+      // Pengecekan Rate Limit 120/menit (Upstash / Memory Sliding Window)
+      const rateLimitRes = await checkApiRateLimit(keyHash);
+      if (!rateLimitRes.success) {
         return {
           authorized: false,
           status: 429,
           error: "RATE_LIMIT_EXCEEDED",
-          message: "Telah melampaui batas kuota 120 permintaan per menit.",
+          message: rateLimitRes.error || "Telah melampaui batas kuota 120 permintaan per menit.",
         };
       }
 
@@ -174,12 +149,13 @@ export async function authenticateApiKey(request: Request): Promise<ApiAuthResul
       };
     }
 
-    if (isRateLimited(foundKey.id, 120, 60000)) {
+    const mockRateLimitRes = await checkApiRateLimit(keyHash);
+    if (!mockRateLimitRes.success) {
       return {
         authorized: false,
         status: 429,
         error: "RATE_LIMIT_EXCEEDED",
-        message: "Telah melampaui batas kuota 120 permintaan per menit.",
+        message: mockRateLimitRes.error || "Telah melampaui batas kuota 120 permintaan per menit.",
       };
     }
 

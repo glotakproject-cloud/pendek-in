@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import crypto from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { type Database, type LinkStatus } from "@/types/database";
+import { checkGuestRateLimit, checkMemberRateLimit } from "@/lib/rate-limit";
 import {
   checkSlugSchema,
   createLinkSchema,
@@ -361,6 +363,35 @@ export async function createLink(input: CreateLinkInput) {
     userId = user?.id || null;
   } catch {
     // Guest link
+  }
+
+  // Terapkan Pembatasan Laju (Rate Limiting) Sesuai Peran
+  if (userId) {
+    // Kuota Member: 200 per jam
+    const rateCheck = await checkMemberRateLimit(userId);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: rateCheck.error || "Batas kuota pembuatan tautan terlampaui.",
+      };
+    }
+  } else {
+    // Kuota Tamu / Guest: 10 per jam per IP
+    let clientIp = "127.0.0.1";
+    try {
+      const headerList = await headers();
+      const forwarded = headerList.get("x-forwarded-for");
+      clientIp = forwarded ? forwarded.split(",")[0].trim() : "127.0.0.1";
+    } catch {
+      // Fallback ip
+    }
+    const rateCheck = await checkGuestRateLimit(clientIp);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: rateCheck.error || "Batas kuota pemendekan tamu terlampaui.",
+      };
+    }
   }
 
   // Insert ke database Supabase jika aktif

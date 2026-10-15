@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { type LinkStatus, type UserRole, type UserStatus } from "@/types/database";
+import { blockedDomainSchema, reservedWordSchema } from "@/lib/validations/admin";
 
 // ==========================================
 // TIPE DATA ADMIN
@@ -743,22 +744,27 @@ export async function addBlockedDomain(
   domain: string,
   reason?: string
 ): Promise<{ success: boolean; data?: BlockedDomainItem; error?: string }> {
-  const cleanDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  if (!cleanDomain) {
-    return { success: false, error: "Nama domain wajib diisi" };
+  const parsed = blockedDomainSchema.safeParse({ domain, reason });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || "Input domain tidak valid" };
+  }
+
+  const { domain: cleanDomain, reason: cleanReason } = parsed.data;
+  if (!cleanDomain || !cleanDomain.includes(".")) {
+    return { success: false, error: "Format nama domain tidak valid (contoh: situs-phishing.com)" };
   }
 
   const newItem: BlockedDomainItem = {
     id: Date.now(),
     domain: cleanDomain,
-    reason: reason?.trim() || "Domain terindikasi berbahaya",
+    reason: cleanReason || "Domain terindikasi berbahaya",
     addedBy: "Super Admin",
     createdAt: new Date().toISOString(),
   };
 
   if (!isSupabaseConfigured()) {
     globalAdminStore.__adminBlockedDomains?.unshift(newItem);
-    await logAudit("DOMAIN_BLOCKED", "domain", cleanDomain, { reason });
+    await logAudit("DOMAIN_BLOCKED", "domain", cleanDomain, { reason: cleanReason });
     revalidatePath("/admin/domain-terblokir");
     return { success: true, data: newItem };
   }
@@ -773,7 +779,7 @@ export async function addBlockedDomain(
       .from("blocked_domains")
       .insert({
         domain: cleanDomain,
-        reason: reason?.trim() || null,
+        reason: cleanReason || null,
         added_by: user?.id || null,
       })
       .select()
@@ -783,7 +789,7 @@ export async function addBlockedDomain(
       return { success: false, error: error.message };
     }
 
-    await logAudit("DOMAIN_BLOCKED", "domain", cleanDomain, { reason });
+    await logAudit("DOMAIN_BLOCKED", "domain", cleanDomain, { reason: cleanReason });
     revalidatePath("/admin/domain-terblokir");
 
     return {
@@ -872,7 +878,12 @@ export async function getReservedWords(search?: string): Promise<{
 export async function addReservedWord(
   word: string
 ): Promise<{ success: boolean; data?: ReservedWordItem; error?: string }> {
-  const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  const parsed = reservedWordSchema.safeParse({ word });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || "Kata slug terlarang tidak valid" };
+  }
+
+  const cleanWord = parsed.data.word;
   if (!cleanWord) {
     return { success: false, error: "Kata slug terlarang wajib diisi" };
   }
