@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,35 +18,79 @@ import {
   Search,
   Filter,
   Shield,
-  Clock,
   Download,
 } from "lucide-react";
-import {
-  DUMMY_AUDIT_LOGS,
-  type DummyAuditLog,
-} from "@/lib/dummy-data";
+import { getAuditLogs, type AuditLogItem } from "@/actions/admin";
 
 export default function LogAktivitasAdminPage() {
-  const [logs] = useState<DummyAuditLog[]>(DUMMY_AUDIT_LOGS);
+  const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [targetTypeFilter, setTargetTypeFilter] = useState<string>("all");
-  const [timeFilter, setTimeFilter] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchLogs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await getAuditLogs({
+        targetType: targetTypeFilter !== "all" ? targetTypeFilter : undefined,
+        limit: 100,
+      });
+
+      if (res.success && res.data) {
+        setLogs(res.data);
+      }
+    } catch {
+      toast.error("Gagal memuat log aktivitas");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [targetTypeFilter]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.metadata.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType =
-      targetTypeFilter === "all" || log.targetType === targetTypeFilter;
-    return matchesSearch && matchesType;
+    const q = searchQuery.toLowerCase();
+    const metaStr = JSON.stringify(log.metadata || "").toLowerCase();
+    return (
+      log.actorName.toLowerCase().includes(q) ||
+      log.action.toLowerCase().includes(q) ||
+      (log.targetId && log.targetId.toLowerCase().includes(q)) ||
+      metaStr.includes(q)
+    );
   });
 
   const handleExportCSV = () => {
-    toast.success("Audit Log Berhasil Diekspor!", {
-      description: "File audit_logs_pendekin_2026.csv telah siap diunduh.",
-    });
+    if (filteredLogs.length === 0) {
+      toast.info("Tidak ada log untuk diekspor");
+      return;
+    }
+
+    const headers = ["ID", "Waktu", "Aksi", "Tipe Target", "Target ID", "Aktor", "Metadata"];
+    const rows = filteredLogs.map((l) => [
+      l.id,
+      l.createdAt,
+      l.action,
+      l.targetType || "-",
+      l.targetId || "-",
+      l.actorName,
+      JSON.stringify(l.metadata || "").replace(/"/g, '""'),
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => `"${e.join('","')}"`)].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `audit_logs_pendekin_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Audit Log Berhasil Diekspor! 📥");
   };
 
   return (
@@ -99,118 +143,93 @@ export default function LogAktivitasAdminPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-cream border-2 border-black px-3 py-1.5 h-11">
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-1.5 border-2 border-black bg-white px-3 py-2 shadow-brutal-sm">
               <Filter className="h-4 w-4 text-black" strokeWidth={2.5} />
               <select
                 value={targetTypeFilter}
                 onChange={(e) => setTargetTypeFilter(e.target.value)}
-                className="bg-transparent text-xs font-black text-black outline-none cursor-pointer"
+                className="bg-transparent text-xs font-mono font-bold text-black focus:outline-none cursor-pointer"
               >
                 <option value="all">Semua Tipe Target</option>
-                <option value="domain">Domain</option>
                 <option value="link">Tautan (Link)</option>
                 <option value="user">Pengguna (User)</option>
-                <option value="word">Kata Terlarang</option>
-                <option value="system">Konfigurasi Sistem</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 bg-cream border-2 border-black px-3 py-1.5 h-11">
-              <Clock className="h-4 w-4 text-black" strokeWidth={2.5} />
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value)}
-                className="bg-transparent text-xs font-black text-black outline-none cursor-pointer"
-              >
-                <option value="all">Semua Waktu</option>
-                <option value="24h">24 Jam Terakhir</option>
-                <option value="7d">7 Hari Terakhir</option>
-                <option value="30d">30 Hari Terakhir</option>
+                <option value="domain">Domain</option>
+                <option value="reserved_word">Kata Terlarang</option>
+                <option value="system">Pengaturan Sistem</option>
               </select>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Audit Log Table */}
+      {/* Table Audit Logs */}
       <Card className="border-[3px] border-black shadow-brutal bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b-2 border-black bg-primary">
-                <TableHead className="font-heading font-black text-black">Aksi Audit</TableHead>
-                <TableHead className="font-heading font-black text-black">Target</TableHead>
-                <TableHead className="font-heading font-black text-black">Detail Metadata &amp; Alasan</TableHead>
-                <TableHead className="font-heading font-black text-black">Aktor</TableHead>
-                <TableHead className="font-heading font-black text-black">IP Address</TableHead>
-                <TableHead className="font-heading font-black text-black text-right">Waktu</TableHead>
+              <TableRow className="border-b-2 border-black bg-cream">
+                <TableHead className="w-[18%] font-heading font-black text-black">Waktu &amp; Tanggal</TableHead>
+                <TableHead className="w-[18%] font-heading font-black text-black">Aksi / Event</TableHead>
+                <TableHead className="w-[14%] font-heading font-black text-black">Tipe Target</TableHead>
+                <TableHead className="w-[18%] font-heading font-black text-black">Aktor (Admin)</TableHead>
+                <TableHead className="w-[32%] font-heading font-black text-black">Detail Metadata</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y-2 divide-black font-semibold text-xs">
-              {filteredLogs.length === 0 ? (
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-neutral-600 font-bold">
-                    Tidak ada log audit yang sesuai dengan filter pencarian.
+                  <TableCell colSpan={5} className="text-center py-8 font-mono text-sm text-neutral-500">
+                    Memuat catatan log audit sistem...
+                  </TableCell>
+                </TableRow>
+              ) : filteredLogs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-10 font-mono text-sm text-neutral-500">
+                    Tidak ada log aktivitas yang cocok dengan kriteria filter.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredLogs.map((log) => {
-                  const isDestructive =
-                    log.action.includes("BLOCK") || log.action.includes("SUSPEND");
-                  const isWarning =
-                    log.action.includes("ADD") || log.action.includes("RESET");
+                filteredLogs.map((log) => (
+                  <TableRow key={log.id} className="border-b border-neutral-200 hover:bg-cream/20">
+                    <TableCell className="font-mono text-xs font-bold text-neutral-600 py-3.5">
+                      {new Date(log.createdAt).toLocaleString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </TableCell>
 
-                  return (
-                    <TableRow key={log.id} className="hover:bg-cream/40">
-                      {/* Action */}
-                      <TableCell className="py-4">
-                        <Badge
-                          variant={
-                            isDestructive
-                              ? "destructive"
-                              : isWarning
-                              ? "warning"
-                              : "outline"
-                          }
-                          className="font-mono text-[11px] font-black"
-                        >
-                          {log.action}
-                        </Badge>
-                      </TableCell>
+                    <TableCell className="py-3.5">
+                      <span className="font-mono text-xs font-black px-2 py-0.5 border-2 border-black bg-primary/20 shadow-brutal-sm">
+                        {log.action}
+                      </span>
+                    </TableCell>
 
-                      {/* Target */}
-                      <TableCell className="py-4 font-mono font-black text-xs text-black max-w-[180px] truncate">
-                        {log.target}
-                      </TableCell>
+                    <TableCell className="py-3.5">
+                      <span className="font-mono text-xs font-bold text-neutral-700 bg-cream border border-black px-1.5 py-0.5">
+                        {log.targetType || "global"}
+                      </span>
+                    </TableCell>
 
-                      {/* Metadata */}
-                      <TableCell className="py-4 font-medium text-neutral-800 max-w-[320px]">
-                        {log.metadata}
-                      </TableCell>
+                    <TableCell className="font-sans text-xs font-black text-black py-3.5">
+                      {log.actorName}
+                    </TableCell>
 
-                      {/* Actor */}
-                      <TableCell className="py-4 font-bold text-black">
-                        <div>
-                          <p>{log.actor}</p>
-                          <span className="font-mono text-[10px] text-neutral-500 uppercase">
-                            {log.actorRole}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      {/* IP Address */}
-                      <TableCell className="py-4 font-mono text-[11px] text-neutral-600">
-                        {log.ipAddress}
-                      </TableCell>
-
-                      {/* Timestamp */}
-                      <TableCell className="py-4 text-right font-mono text-[11px] text-neutral-700">
-                        {log.timestamp}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                    <TableCell className="font-mono text-xs text-neutral-700 py-3.5">
+                      <div className="bg-cream/40 p-2 border border-black text-[11px] break-all max-w-md">
+                        {log.targetId && (
+                          <div className="font-bold text-black mb-0.5">
+                            Target ID: {log.targetId}
+                          </div>
+                        )}
+                        {log.metadata ? JSON.stringify(log.metadata) : "-"}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

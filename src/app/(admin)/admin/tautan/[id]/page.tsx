@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -26,61 +26,124 @@ import {
   ShieldAlert,
   User,
   AlertTriangle,
-  Globe,
-  Tag,
 } from "lucide-react";
-import {
-  DUMMY_ADMIN_LINKS,
-  DUMMY_ANALYTICS_7_DAYS,
-  type DummyAdminLink,
-} from "@/lib/dummy-data";
 import { Mini7DayChart } from "@/components/dashboard/dashboard-charts";
+import {
+  getAdminLinks,
+  updateLinkStatusAdmin,
+  deleteLinkAdmin,
+  type AdminLinkItem,
+} from "@/actions/admin";
+import { getAnalytics, type AnalyticsResult } from "@/actions/analytics";
 
 export default function DetailTautanAdminPage() {
   const params = useParams();
   const router = useRouter();
-  const rawId = (params?.id as string) || "link-01";
+  const rawId = (params?.id as string) || "lnk-001";
 
-  const initialLink =
-    DUMMY_ADMIN_LINKS.find((l) => l.id === rawId || l.slug === rawId) ||
-    DUMMY_ADMIN_LINKS[0];
+  const [link, setLink] = useState<AdminLinkItem>({
+    id: rawId,
+    userId: null,
+    authorName: "Pengguna",
+    authorEmail: "user@pendek.in",
+    originalUrl: "https://example.com",
+    slug: "slug",
+    title: "Detail Tautan",
+    shortUrl: "https://pendek.in/s/slug",
+    status: "active",
+    clickCount: 0,
+    uniqueClickCount: 0,
+    createdAt: new Date().toISOString(),
+  });
 
-  const [link, setLink] = useState<DummyAdminLink>(initialLink);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockReason, setBlockReason] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [analytics, setAnalytics] = useState<AnalyticsResult | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getAdminLinks({ limit: 100 }).then((res) => {
+      if (!isMounted) return;
+      if (res.success && res.data) {
+        const found = res.data.find((l) => l.id === rawId || l.slug === rawId) || res.data[0];
+        if (found) {
+          setLink(found);
+          getAnalytics({ linkId: found.id, timeRange: "7d" }).then((aRes) => {
+            if (isMounted && aRes.data) {
+              setAnalytics(aRes.data);
+            }
+          });
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawId]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link.shortUrl);
-    toast.success("Tautan Disalin ke Clipboard!");
+    toast.success("Tautan Disalin ke Clipboard! 📋");
   };
 
-  const handleConfirmBlock = () => {
-    setLink({
-      ...link,
-      status: "blocked",
-      blockReason: blockReason || "Pelanggaran pedoman konten dan keamanan",
-    });
-    toast.error("Tautan Berhasil Diblokir!", {
-      description: `Tautan /${link.slug} telah diblokir secara global.`,
-    });
-    setIsBlockModalOpen(false);
+  const handleConfirmBlock = async () => {
+    setIsProcessing(true);
+    try {
+      const res = await updateLinkStatusAdmin(
+        link.id,
+        "blocked",
+        blockReason || "Pelanggaran pedoman konten dan keamanan"
+      );
+
+      if (res.success) {
+        setLink({ ...link, status: "blocked" });
+        toast.error("Tautan Berhasil Diblokir!", {
+          description: `Tautan /s/${link.slug} telah diblokir secara global.`,
+        });
+        setIsBlockModalOpen(false);
+      } else {
+        toast.error(res.error || "Gagal memblokir tautan");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan sistem");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleUnblock = () => {
-    setLink({
-      ...link,
-      status: "active",
-      blockReason: undefined,
-    });
-    toast.success("Pemblokiran Tautan Dicabut!", {
-      description: `Tautan /${link.slug} telah diaktifkan kembali.`,
-    });
+  const handleUnblock = async () => {
+    try {
+      const res = await updateLinkStatusAdmin(link.id, "active", "Dibuka kembali oleh Super Admin");
+      if (res.success) {
+        setLink({ ...link, status: "active" });
+        toast.success("Pemblokiran Tautan Dicabut!", {
+          description: `Tautan /s/${link.slug} telah diaktifkan kembali.`,
+        });
+      }
+    } catch {
+      toast.error("Gagal membuka blokir");
+    }
   };
 
-  const handleConfirmDelete = () => {
-    toast.success("Tautan Dihapus Permanen!");
-    router.push("/admin/tautan");
+  const handleConfirmDelete = async () => {
+    setIsProcessing(true);
+    try {
+      const res = await deleteLinkAdmin(link.id, "Dihapus dari admin detail");
+      if (res.success) {
+        toast.success("Tautan Dihapus Permanen!");
+        router.push("/admin/tautan");
+      } else {
+        toast.error(res.error || "Gagal menghapus tautan");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan sistem");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -100,22 +163,25 @@ export default function DetailTautanAdminPage() {
             Salin Link
           </Button>
 
-          <Button variant="outline" size="sm" asChild className="bg-white">
-            <a href={link.shortUrl} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-4 w-4 mr-1.5" strokeWidth={2.5} />
-              Buka /s/{link.slug}
-            </a>
-          </Button>
-
           {link.status === "blocked" ? (
-            <Button variant="default" size="sm" onClick={handleUnblock}>
-              <CheckCircle2 className="h-4 w-4 mr-1.5" strokeWidth={2.5} />
-              Buka Blokir
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleUnblock}
+              className="flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="h-4 w-4 text-black" strokeWidth={2.5} />
+              <span>Buka Blokir Tautan</span>
             </Button>
           ) : (
-            <Button variant="destructive" size="sm" onClick={() => setIsBlockModalOpen(true)}>
-              <Ban className="h-4 w-4 mr-1.5" strokeWidth={2.5} />
-              Blokir Tautan
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsBlockModalOpen(true)}
+              className="flex items-center gap-1.5"
+            >
+              <Ban className="h-4 w-4" strokeWidth={2.5} />
+              <span>Blokir Tautan Ini</span>
             </Button>
           )}
 
@@ -123,183 +189,172 @@ export default function DetailTautanAdminPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsDeleteModalOpen(true)}
-            className="border-destructive text-destructive hover:bg-destructive/10"
+            className="text-destructive hover:bg-destructive/10 border-destructive"
           >
-            <Trash2 className="h-4 w-4 mr-1.5" strokeWidth={2.5} />
-            Hapus
+            <Trash2 className="h-4 w-4" strokeWidth={2.5} />
           </Button>
         </div>
       </div>
 
-      {/* Main Info Card */}
-      <Card className="border-[3px] border-black shadow-brutal bg-white p-6 space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-black pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs font-black bg-cream border border-black px-2 py-0.5">
-                SLUG: /{link.slug}
-              </span>
-              {link.status === "active" && <Badge variant="default">Status Aktif</Badge>}
-              {link.status === "blocked" && <Badge variant="destructive">Status Diblokir</Badge>}
-              {link.status === "expired" && <Badge variant="warning">Kedaluwarsa</Badge>}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-black text-black pt-1">
-              {link.title}
-            </h1>
-            <p className="font-mono text-xs text-primary-dark font-bold">
-              {link.shortUrl}
-            </p>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-4 bg-cream border-2 border-black p-4 shadow-brutal-sm shrink-0">
-            <div className="text-center px-3">
-              <span className="text-[10px] font-mono font-bold uppercase text-neutral-600 block">Total Klik</span>
-              <span className="font-mono text-2xl font-black text-black">{link.clicks.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="w-px h-8 bg-black/20" />
-            <div className="text-center px-3">
-              <span className="text-[10px] font-mono font-bold uppercase text-neutral-600 block">Klik Unik</span>
-              <span className="font-mono text-2xl font-black text-primary-dark">{link.uniqueClicks.toLocaleString("id-ID")}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Reason Banner if Blocked */}
-        {link.status === "blocked" && (
-          <div className="bg-destructive/15 border-2 border-destructive p-4 shadow-brutal-sm space-y-1">
-            <div className="flex items-center gap-1.5 text-destructive font-black text-xs font-mono uppercase">
-              <ShieldAlert className="h-4 w-4" strokeWidth={2.5} />
-              <span>Alasan Pemblokiran Sistem</span>
-            </div>
-            <p className="text-xs font-bold text-black">
-              {link.blockReason || "Konten terdeteksi melanggar ketentuan layanan pencegahan penipuan online."}
-            </p>
-          </div>
-        )}
-
-        {/* Detail Meta Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-cream border-2 border-black p-4 space-y-1.5">
-            <span className="text-[11px] font-black uppercase text-neutral-600 flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5" />
-              Target URL Asli
-            </span>
-            <p className="font-mono text-xs font-bold text-black break-all bg-white p-2.5 border border-black select-all">
-              {link.originalUrl}
-            </p>
-          </div>
-
-          <div className="bg-cream border-2 border-black p-4 space-y-1.5">
-            <span className="text-[11px] font-black uppercase text-neutral-600 flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5" />
-              Pemilik Akun Tautan
-            </span>
-            <div className="bg-white p-2.5 border border-black flex items-center justify-between">
-              <div>
-                <p className="font-black text-xs text-black">{link.userName}</p>
-                <p className="font-mono text-[11px] text-neutral-600">{link.userEmail}</p>
+      {/* Main Link Info Card */}
+      <Card className="border-[3px] border-black shadow-brutal bg-white p-6">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl font-black font-heading text-black">{link.title}</h1>
+                <Badge
+                  variant={
+                    link.status === "active"
+                      ? "default"
+                      : link.status === "blocked"
+                      ? "destructive"
+                      : "warning"
+                  }
+                >
+                  {link.status === "active" ? "Aktif" : link.status === "blocked" ? "Diblokir" : "Kadaluarsa"}
+                </Badge>
               </div>
-              <Button variant="outline" size="sm" asChild className="h-7 text-[10px] font-bold">
-                <Link href={`/admin/pengguna/${link.userId}`}>
-                  Lihat Profil
-                </Link>
-              </Button>
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-primary-dark mt-1">
+                <span>{link.shortUrl}</span>
+                <span className="text-neutral-400">&bull;</span>
+                <span className="text-neutral-500 font-sans">ID: {link.id}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Additional Tags & Info */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t-2 border-black/10">
-          <span className="text-xs font-bold text-neutral-600 flex items-center gap-1">
-            <Tag className="h-3.5 w-3.5" /> Tag:
-          </span>
-          {link.tags.map((t, idx) => (
-            <Badge key={idx} variant="outline" className="text-xs bg-white">
-              {t}
-            </Badge>
-          ))}
-          <span className="text-xs font-mono text-neutral-500 ml-auto">
-            Dibuat pada: {link.createdAt}
-          </span>
-        </div>
-      </Card>
-
-      {/* Mini Analytics Section */}
-      <Card className="border-[3px] border-black shadow-brutal bg-white">
-        <CardHeader className="border-b-2 border-black bg-cream p-4">
-          <CardTitle className="text-base font-heading font-black">
-            Analitik Performa Klik (7 Hari Terakhir)
-          </CardTitle>
-          <CardDescription className="text-xs font-semibold text-neutral-700">
-            Riwayat klik harian tautan /{link.slug}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <Mini7DayChart data={DUMMY_ANALYTICS_7_DAYS} />
-        </CardContent>
-      </Card>
-
-      {/* Block Dialog */}
-      <Dialog open={isBlockModalOpen} onOpenChange={setIsBlockModalOpen}>
-        <DialogContent className="border-[3px] border-black bg-white shadow-brutal-xl sm:max-w-md">
-          <DialogHeader className="space-y-2">
-            <div className="w-12 h-12 bg-destructive text-white border-2 border-black flex items-center justify-center shadow-brutal-sm">
-              <ShieldAlert className="h-6 w-6" strokeWidth={2.5} />
+          {/* URL Asli Card */}
+          <div className="p-4 border-2 border-black bg-cream shadow-brutal-sm flex items-start justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <span className="text-[11px] font-black uppercase text-neutral-600 font-mono">
+                URL Asli Tujuan (Original Destination):
+              </span>
+              <div className="font-mono text-xs font-bold text-black break-all">
+                {link.originalUrl}
+              </div>
             </div>
-            <DialogTitle className="font-heading font-black text-xl text-black">
-              Blokir Tautan /{link.slug}
+            <Button size="sm" variant="outline" asChild className="shrink-0 bg-white">
+              <a href={link.originalUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1">
+                <span>Buka Target</span>
+                <ExternalLink className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </a>
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Grid: Profil Pembuat & Grafik Klik 7 Hari */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Kolom Kiri: Pembuat & Metadata (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="border-[3px] border-black shadow-brutal bg-white">
+            <CardHeader className="border-b-2 border-black bg-cream p-4">
+              <CardTitle className="text-sm font-black flex items-center gap-2">
+                <User className="h-4 w-4 text-black" strokeWidth={2.5} />
+                <span>Identitas Pembuat Tautan</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3 font-mono text-xs">
+              <div className="flex justify-between py-1 border-b border-neutral-200">
+                <span className="text-neutral-600">Nama Akun:</span>
+                <span className="font-black text-black">{link.authorName}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-neutral-200">
+                <span className="text-neutral-600">Alamat Email:</span>
+                <span className="font-black text-black">{link.authorEmail}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-neutral-200">
+                <span className="text-neutral-600">Tanggal Dibuat:</span>
+                <span className="font-black text-black">
+                  {new Date(link.createdAt).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-neutral-600">Total Klik Tercatat:</span>
+                <span className="font-black text-primary-dark text-sm">
+                  {link.clickCount.toLocaleString("id-ID")} klik
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Kolom Kanan: Tren Klik (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <Card className="border-[3px] border-black shadow-brutal bg-white">
+            <CardHeader className="border-b-2 border-black bg-cream p-4">
+              <CardTitle className="text-sm font-black">
+                Aktivitas Trafik Kunjungan (7 Hari)
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Tren klik harian tautan ini yang terverifikasi di server
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6">
+              <Mini7DayChart data={analytics?.timeSeries || []} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Modal Konfirmasi Blokir */}
+      <Dialog open={isBlockModalOpen} onOpenChange={setIsBlockModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5" strokeWidth={2.5} />
+              Blokir Tautan Publik Ini?
             </DialogTitle>
-            <DialogDescription className="text-xs font-semibold text-neutral-700">
-              Tautan ini tidak akan dapat diakses oleh siapapun dan pengunjung akan langsung diarahkan ke halaman 404.
+            <DialogDescription className="font-semibold text-black">
+              Pengunjung yang mengakses short link ini tidak akan diarahkan ke tujuan dan sistem akan mencatat insiden pemblokiran ke Audit Log.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2 py-2">
             <label className="text-xs font-black uppercase tracking-wider text-black">
-              Alasan Pemblokiran
+              Alasan Pemblokiran (Wajib):
             </label>
             <Input
-              type="text"
-              placeholder="Contoh: Terdeteksi phishing, malware, atau penipuan..."
+              placeholder="Contoh: Scam giveaway, impersonasi domain resmi, spam bot..."
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value)}
-              className="border-2 border-black bg-white text-xs font-semibold"
+              className="bg-white border-2 border-black"
             />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsBlockModalOpen(false)} className="bg-white">
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBlockModalOpen(false)} disabled={isProcessing}>
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleConfirmBlock}>
-              Konfirmasi Blokir
+            <Button variant="destructive" onClick={handleConfirmBlock} disabled={isProcessing}>
+              {isProcessing ? "Memblokir..." : "Ya, Blokir Sekarang"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* Modal Hapus Permanen */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="border-[3px] border-black bg-white shadow-brutal-xl sm:max-w-md">
-          <DialogHeader className="space-y-2">
-            <div className="w-12 h-12 bg-destructive text-white border-2 border-black flex items-center justify-center shadow-brutal-sm">
-              <AlertTriangle className="h-6 w-6" strokeWidth={2.5} />
-            </div>
-            <DialogTitle className="font-heading font-black text-xl text-black">
-              Hapus Tautan /{link.slug}?
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" strokeWidth={2.5} />
+              Hapus Tautan Secara Permanen?
             </DialogTitle>
-            <DialogDescription className="text-xs font-semibold text-neutral-700">
-              Aksi ini bersifat permanen. Tautan dan seluruh data klik di dalamnya akan dihapus.
+            <DialogDescription className="font-semibold text-black">
+              Apakah Anda yakin ingin menghapus tautan &ldquo;{link.title}&rdquo;? Tindakan ini bersifat destruktif dan tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} className="bg-white">
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={isProcessing}>
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
-              Ya, Hapus Tautan
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isProcessing}>
+              {isProcessing ? "Menghapus..." : "Ya, Hapus Permanen"}
             </Button>
           </DialogFooter>
         </DialogContent>

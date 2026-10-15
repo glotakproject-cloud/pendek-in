@@ -69,59 +69,54 @@ export default function DetailTautanPage() {
   // Fetch Link Detail & Analytics
   useEffect(() => {
     let isMounted = true;
-    setIsLoadingLink(true);
 
-    getLinkDetail(rawId)
-      .then((res) => {
-        if (!isMounted) return;
-        if (res.success && res.data) {
-          const l = res.data;
-          const origin = typeof window !== "undefined" ? window.location.origin : "https://pendek.in";
-          setLinkId(l.id);
-          setSlug(l.slug);
-          setShortUrl(`${origin}/s/${l.slug}`);
-          setTitle(l.title || l.slug);
-          setOriginalUrl(l.original_url);
-          setDescription(l.description || "");
-          setStatus(l.status);
-          setExpiresAt(l.expires_at ? l.expires_at.split("T")[0] : "");
-          setTags(l.tags || []);
-          setClickCount(l.click_count);
-          setUniqueClickCount(l.unique_click_count);
-          setCreatedAt(
-            new Date(l.created_at).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })
-          );
-          setIsPasswordProtected(Boolean(l.password_hash));
+    getLinkDetail(rawId).then((res) => {
+      if (!isMounted) return;
+      if (res.success && res.data) {
+        const l = res.data;
+        const origin = typeof window !== "undefined" ? window.location.origin : "https://pendek.in";
+        setLinkId(l.id);
+        setSlug(l.slug);
+        setShortUrl(`${origin}/s/${l.slug}`);
+        setTitle(l.title || l.slug);
+        setOriginalUrl(l.original_url);
+        setDescription(l.description || "");
+        setStatus(l.status);
+        setExpiresAt(l.expires_at ? l.expires_at.split("T")[0] : "");
+        setTags(l.tags || []);
+        setClickCount(l.click_count);
+        setUniqueClickCount(l.unique_click_count);
+        setCreatedAt(
+          new Date(l.created_at).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        );
+        setIsPasswordProtected(Boolean(l.password_hash));
 
-          // Load QR preferences if set
-          try {
-            const savedQr = localStorage.getItem(`pendekin_qr_${l.id}`);
-            if (savedQr) {
-              const parsed = JSON.parse(savedQr);
-              if (parsed.fgColor) setQrFg(parsed.fgColor);
-              if (parsed.bgColor) setQrBg(parsed.bgColor);
-            }
-          } catch {
-            // ignore
+        // Load QR preferences if set
+        try {
+          const savedQr = localStorage.getItem(`pendekin_qr_${l.id}`);
+          if (savedQr) {
+            const parsed = JSON.parse(savedQr);
+            if (parsed.fgColor) setQrFg(parsed.fgColor);
+            if (parsed.bgColor) setQrBg(parsed.bgColor);
           }
-
-          // Fetch Analytics for this link
-          getAnalytics({ linkId: l.id, timeRange: "7d" }).then((aRes) => {
-            if (isMounted && aRes.data) {
-              setAnalytics(aRes.data);
-            }
-          });
-        } else {
-          toast.error("Tautan tidak ditemukan");
+        } catch {
+          // ignore
         }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingLink(false);
-      });
+
+        // Fetch Analytics for this link
+        getAnalytics({ linkId: l.id, timeRange: "7d" }).then((aRes) => {
+          if (isMounted && aRes.data) {
+            setAnalytics(aRes.data);
+          }
+        });
+      } else {
+        toast.error("Tautan tidak ditemukan");
+      }
+    });
 
     return () => {
       isMounted = false;

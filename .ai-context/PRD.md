@@ -569,7 +569,7 @@ UPSTASH_REDIS_REST_TOKEN=xxxxxxxxxxxxxxxx
 - [x] **Task 2.5 (Analitik & Agregasi)**: Buat Server Action `getAnalytics` untuk mengagregasi klik: total, unique, time-series per hari, top referrer/country/device, top 5 link. Integrasikan Recharts di `/dashboard/analitik` dan `/dashboard/tautan/[id]`.
 - [x] **Task 2.6 (API Keys & Public REST API v1)**: Buat halaman `/dashboard/api-key` fungsional (generate `pk_live_...` 32-char random, hash SHA-256 ke `api_keys.key_hash`, tampilkan sekali, list dengan prefix, revoke). Implementasi Route Handlers `/api/v1/links` (POST, GET), `/api/v1/links/[id]` (GET, DELETE), `/api/v1/links/[id]/analytics` dengan middleware autentikasi Bearer Token + rate-limit 120/menit.
 - [x] **Task 2.7 (QR Dinamis & Frontend Data Binding)**: Implementasi generator QR dengan `qrcode.react` (atau server-side), editor warna di `/dashboard/tautan/[id]/qr`, unduh PNG/SVG. Ganti seluruh dummy data Fase 1 dengan data live dari Supabase di semua halaman member & admin.
-- [ ] **Task 2.8 (Admin Server Actions & Audit Log)**: Buat Server Action admin: ban/unban user, block/unblock link, CRUD `blocked_domains`, CRUD `reserved_words`, dan helper `logAudit()`. Ikat ke seluruh halaman `/admin/*`.
+- [x] **Task 2.8 (Admin Server Actions & Audit Log)**: Buat Server Action admin: ban/unban user, block/unblock link, CRUD `blocked_domains`, CRUD `reserved_words`, dan helper `logAudit()`. Ikat ke seluruh halaman `/admin/*`.
 
 ### Fase 3: Integrasi Email, Keamanan, SEO, Testing, & Deployment
 *Tujuan: Menyempurnakan integrasi email, hardening keamanan, optimasi SEO & performa, uji end-to-end, dan rilis ke production.*
