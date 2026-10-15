@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env*.local
+.env.production
+01-Design
+02-Logs
+03-Assets
+.obsidian
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+README.md

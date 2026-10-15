@@ -577,7 +577,7 @@ UPSTASH_REDIS_REST_TOKEN=xxxxxxxxxxxxxxxx
 - [x] **Task 3.2 (Keamanan, Validasi, & Rate Limiting)**: Aktifkan **Zod** di semua Server Actions & Route Handlers, sanitasi input XSS di field `title`/`description`/`slug`, verifikasi RLS Supabase 100% tertutup, implementasi rate-limit Upstash Redis (guest 10/jam per IP untuk pemendekan publik, member 200/jam, API 120/menit).
 - [x] **Task 3.3 (SEO & Performa)**: Implementasi `generateMetadata` dinamis per halaman publik (title, meta description, Open Graph), `noindex` di `/s/[slug]` & halaman dashboard, tambahkan `sitemap.ts` & `robots.ts`, ISR/caching untuk halaman statis, optimasi `<Image>` Next.js, dan pastikan latency redirect `/s/[slug]` < 100ms (klik pencatatan non-blocking).
 - [x] **Task 3.4 (End-to-End Testing & Bugfix)**: Uji seluruh user journey: guest pemendekan → daftar Google → buat kustom link → generate QR → share → redirect tercatat → analitik muncul → generate API Key → konsumsi REST API → Super Admin moderasi. Perbaiki glitch responsive, bug relasi, dan optimasi query dengan index database.
-- [ ] **Task 3.5 (Production Build & Deployment)**: Isi `.env.production` (Supabase URL, anon key, service role, IP_HASH_SALT, Resend key, Upstash), verifikasi `npm run build` sukses tanpa error, deploy ke Vercel (atau VPS/Docker), set custom domain, aktifkan HTTPS, jalankan smoke test pasca-deploy di production.
+- [x] **Task 3.5 (Production Build & Deployment)**: Isi `.env.production` (Supabase URL, anon key, service role, IP_HASH_SALT, Resend key, Upstash), verifikasi `npm run build` sukses tanpa error, deploy ke Vercel (atau VPS/Docker), set custom domain, aktifkan HTTPS, jalankan smoke test pasca-deploy di production.
 
 ---
 
