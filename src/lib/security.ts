@@ -54,9 +54,10 @@ export function sanitizeSlug(slug: string): string {
   return slug
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "") // Hanya izinkan alfanumerik, underscore, dan hyphen
-    .replace(/_{2,}/g, "_")
-    .replace(/-{2,}/g, "-")
+    .replace(/[\s_]+/g, "-") // Konversi spasi dan underscore menjadi tanda hubung
+    .replace(/[^a-z0-9-]/g, "") // Hanya izinkan huruf kecil, angka, dan hyphen
+    .replace(/-{2,}/g, "-") // Normalisasi multiple hyphen
+    .replace(/^-+|-+$/g, "") // Hapus hyphen di awal dan akhir
     .slice(0, 50); // Maksimal 50 karakter
 }
 

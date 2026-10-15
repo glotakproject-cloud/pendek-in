@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { createLink } from "@/actions/links";
 
 export interface QuickLinkItem {
   id: string;
@@ -119,7 +120,7 @@ export function HeroShortener() {
     }
   };
 
-  const handleShorten = (e: React.FormEvent) => {
+  const handleShorten = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -140,34 +141,37 @@ export function HeroShortener() {
       return;
     }
 
-    // Reserved words check dummy
     const cleanSlug = customSlug.trim().toLowerCase();
-    if (cleanSlug) {
-      if (!/^[a-z0-9-]+$/.test(cleanSlug)) {
-        setErrorMsg("Kustom slug hanya boleh berupa huruf, angka, dan tanda hubung (-)");
-        return;
-      }
-      if (["api", "admin", "dashboard", "masuk", "daftar", "s"].includes(cleanSlug)) {
-        setErrorMsg("Slug ini termasuk kata terlarang (reserved word). Coba kata lain.");
-        return;
-      }
-    }
-
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      const generatedSlug = cleanSlug || Math.random().toString(36).substring(2, 8);
-      const newShortUrl = `pendek.in/${generatedSlug}`;
+    try {
+      const res = await createLink({
+        original_url: cleanUrl,
+        custom_slug: cleanSlug || undefined,
+      });
+
+      if (!res.success || !res.data) {
+        setErrorMsg(res.error || "Gagal memendekkan tautan");
+        setIsLoading(false);
+        return;
+      }
+
+      const linkData = res.data;
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://pendek.in";
+      const newShortUrl = `${origin}/s/${linkData.slug}`;
 
       const newItem: QuickLinkItem = {
-        id: `link-${Date.now()}`,
-        originalUrl: cleanUrl,
+        id: linkData.id,
+        originalUrl: linkData.original_url,
         shortUrl: newShortUrl,
-        slug: generatedSlug,
-        clicks: 0,
+        slug: linkData.slug,
+        clicks: linkData.click_count || 0,
         createdAt: "Baru saja",
-        title: cleanSlug ? `Tautan ${cleanSlug}` : `Tautan Pendek ${cleanUrl.replace(/^https?:\/\/(www\.)?/, "").slice(0, 25)}...`,
+        title:
+          linkData.title ||
+          (cleanSlug
+            ? `Tautan ${cleanSlug}`
+            : `Tautan Pendek ${cleanUrl.replace(/^https?:\/\/(www\.)?/, "").slice(0, 25)}...`),
         isCustom: !!cleanSlug,
       };
 
@@ -179,7 +183,12 @@ export function HeroShortener() {
       setInputUrl("");
       setCustomSlug("");
       setShowCustomOption(false);
-    }, 450);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi gangguan saat memendekkan URL";
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteHistoryItem = (id: string) => {

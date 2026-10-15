@@ -83,8 +83,8 @@ export const updateLinkSchema = z.object({
   password: z.string().nullish(),
 });
 
-export type CreateLinkInput = z.infer<typeof createLinkSchema>;
-export type UpdateLinkInput = z.infer<typeof updateLinkSchema>;
+export type CreateLinkInput = z.input<typeof createLinkSchema>;
+export type UpdateLinkInput = z.input<typeof updateLinkSchema>;
 
 /**
  * Generate slug acak 6 karakter (base62 dengan karakter aman tanpa 0, O, 1, l, I)
