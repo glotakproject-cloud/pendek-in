@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -19,6 +20,23 @@ import { getLinkDetail } from "@/actions/links";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  return {
+    title: `Mengalihkan tautan (${slug})`,
+    robots: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+      googleBot: {
+        index: false,
+        follow: false,
+      },
+    },
+  };
 }
 
 export default async function RedirectHandlerPage({ params }: PageProps) {

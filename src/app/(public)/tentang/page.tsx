@@ -19,6 +19,8 @@ export const metadata: Metadata = {
     "Pelajari cerita di balik Pendek-In, visi kami untuk ekosistem digital Indonesia, dan prinsip desain Neobrutalisme yang kami usung.",
 };
 
+export const revalidate = 86400; // ISR cache 24 jam
+
 const values = [
   {
     icon: Zap,

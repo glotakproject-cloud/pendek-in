@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     "Pendek-In adalah layanan pemendek tautan 100% gratis tanpa biaya tersembunyi. Bandingkan fitur pengguna Tamu, Member, dan Developer di sini.",
 };
 
+export const revalidate = 86400; // ISR cache 24 jam
+
 const tiers = [
   {
     name: "Pengunjung Tamu",

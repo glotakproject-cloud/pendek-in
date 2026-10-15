@@ -9,6 +9,8 @@ export const metadata: Metadata = {
     "Syarat dan ketentuan resmi penggunaan layanan pemendek tautan Pendek-In. Ketentuan ini mengikat seluruh pengunjung dan pengguna terdaftar.",
 };
 
+export const revalidate = 86400; // ISR cache 24 jam
+
 export default function TermsOfServicePage() {
   return (
     <div className="w-full py-12 md:py-20 space-y-12">

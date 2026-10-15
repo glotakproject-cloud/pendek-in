@@ -9,6 +9,8 @@ export const metadata: Metadata = {
     "Kebijakan privasi resmi Pendek-In. Pelajari bagaimana kami melindungi data pengunjung dengan enkripsi hash IP SHA-256 dan arsitektur database Supabase RLS.",
 };
 
+export const revalidate = 86400; // ISR cache 24 jam
+
 export default function PrivacyPolicyPage() {
   return (
     <div className="w-full py-12 md:py-20 space-y-12">
